@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Confere. · agenda o robô para 23:59, todo dia.
+     Se o Mac estiver desligado nessa hora, o robô roda quando você ligar e entrar na sua conta. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.confere.robo</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/matheuscatani/.nvm/versions/node/v24.14.1/bin/node</string>
+    <string>/Users/matheuscatani/APP BUSCAS/robo/coletar.mjs</string>
+    <string>--agendado</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/matheuscatani/APP BUSCAS</string>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>23</integer><key>Minute</key><integer>59</integer></dict>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/Users/matheuscatani/APP BUSCAS/robo/agendado.log</string>
+  <key>StandardErrorPath</key><string>/Users/matheuscatani/APP BUSCAS/robo/agendado.log</string>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin</string></dict>
+</dict>
+</plist>

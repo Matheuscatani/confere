@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confere. Loja de ofertas conferidas</title>
+<meta name="description" content="TVs, ar-condicionado, geladeiras, celulares e mais com preço abaixo do normal, só de lojas bem avaliadas no Reclame Aqui.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Imbue:opsz,wght@10..100,400&family=Albert+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<p class="notice">Toda oferta aqui foi conferida no Reclame Aqui. Podemos ganhar comissão pelos links, sem custo extra para você.</p>
+
+<header class="top">
+  <a class="logo" href="#" aria-label="Confere., início">Confere.</a>
+  <form class="search" role="search" onsubmit="return false">
+    <label class="sr" for="busca">Buscar produto</label>
+    <input id="busca" type="search" placeholder="Buscar TV, ar-condicionado, geladeira…" autocomplete="off">
+    <button type="submit" aria-label="Buscar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2.4"/></svg>
+    </button>
+  </form>
+  <nav class="top-links" aria-label="Ajuda">
+    <a href="#como">Como conferimos</a>
+    <a class="top-cta" href="#alertas">Alertas no WhatsApp</a>
+  </nav>
+</header>
+
+<nav class="cats" aria-label="Departamentos">
+  <div class="cats-row" id="cats"></div>
+</nav>
+
+<main>
+  <!-- OFERTA DO DIA -->
+  <section class="deal" id="destaque" aria-labelledby="deal-title">
+    <button class="deal-img" id="deal-img" type="button" aria-label="Ver detalhes da oferta do dia"></button>
+    <div class="deal-info">
+      <h1 id="deal-title">Oferta do dia</h1>
+      <p class="deal-name" id="deal-name"></p>
+      <p class="deal-price"><s id="deal-de"></s> <strong id="deal-por"></strong></p>
+      <p class="deal-terms" id="deal-terms"></p>
+      <ul class="deal-checks" id="deal-checks"></ul>
+      <div class="deal-actions">
+        <a class="btn" id="deal-buy" href="#" rel="sponsored nofollow noopener" target="_blank">Comprar na loja</a>
+        <button class="btn btn-ghost" type="button" id="deal-more">Por que é uma boa compra</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- VITRINE -->
+  <section class="shop" id="loja" aria-labelledby="loja-title">
+    <aside class="filters" aria-labelledby="filtros-title">
+      <details class="filters-box" id="filtros-box" open>
+      <summary class="filters-title"><h2 id="filtros-title" style="font:inherit;margin:0">Filtrar</h2></summary>
+
+      <fieldset>
+        <legend>Nota mínima da loja no Reclame Aqui (de 0 a 10)</legend>
+        <div class="gauge">
+          <input type="range" id="nota-min" min="5" max="9" step="0.5" value="7" aria-describedby="nota-help">
+          <output id="nota-out" for="nota-min">7,0 ou mais</output>
+        </div>
+        <p id="nota-help" class="help">Abaixo de 7, a loja sai da vitrine. Mexa e veja o que muda.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Preço até</legend>
+        <select id="preco-max" aria-label="Preço máximo">
+          <option value="0">Qualquer preço</option>
+          <option value="500">R$ 500</option>
+          <option value="1000">R$ 1.000</option>
+          <option value="2000">R$ 2.000</option>
+          <option value="3000">R$ 3.000</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>Loja</legend>
+        <div id="lojas-filtro" class="checks"></div>
+      </fieldset>
+
+      <fieldset id="frete-box">
+        <legend>Entrega</legend>
+        <label class="check"><input type="checkbox" id="frete-gratis"> Só frete grátis</label>
+      </fieldset>
+      </details>
+    </aside>
+
+    <div class="results">
+      <div class="results-head">
+        <h2 id="loja-title">Todas as ofertas</h2>
+        <div class="results-tools">
+          <p id="count" aria-live="polite"></p>
+          <label class="sort">Ordenar por
+            <select id="ordem">
+              <option value="melhores">Melhores ofertas</option>
+              <option value="desconto">Maior desconto</option>
+              <option value="menor">Menor preço</option>
+              <option value="maior">Maior preço</option>
+              <option value="reputacao">Melhor loja</option>
+              <option value="avaliacao">Mais bem avaliados</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <ul class="grid" id="grid"></ul>
+      <button class="btn more" id="mais" type="button" hidden>Mostrar mais</button>
+      <div class="empty" id="empty" hidden>
+        <p>Nenhuma oferta conferida com esses filtros.</p>
+        <button class="btn" type="button" id="limpar">Limpar filtros</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO CONFERIMOS -->
+  <section class="how" id="como" aria-labelledby="como-title">
+    <figure class="how-photo">
+      <video src="assets/tamale-market-no-audio.webm" poster="assets/tamale-market-no-audio-poster.jpg" width="854" height="480" autoplay muted loop playsinline aria-label="Movimento de um grande mercado de rua"></video>
+      <figcaption>Comprar bem é o que se faz na feira: olhar o preço e conhecer quem vende.</figcaption>
+    </figure>
+    <div class="how-text">
+      <h2 id="como-title">Como conferimos</h2>
+      <p class="how-lead">Desconto em loja que some com o seu dinheiro não é desconto. Antes de entrar na vitrine, cada produto passa por três perguntas.</p>
+      <ol class="how-steps">
+        <li><img src="assets/kassa-s-maxis-superstore-cash-registers-in.jpg" width="1920" height="2910" alt="Fileira de caixas de supermercado nos anos 1970" loading="lazy"><h3>O preço é bom mesmo?</h3><p>Todo dia comparamos o mesmo modelo em cinco lojas e mostramos onde está mais barato. Para entrar, precisa ter desconto de verdade ou ganhar das outras lojas no preço.</p></li>
+        <li><img src="assets/feira-livre-largo-da-epatur-porto-alegre.jpg" width="1920" height="1440" alt="Barracas de feira livre em Porto Alegre" loading="lazy"><h3>A loja cumpre o que vende?</h3><p>Nota 7 ou mais no Reclame Aqui. Em cada produto mostramos também quantas reclamações a loja resolveu e quantos clientes voltariam a comprar.</p></li>
+        <li><img src="assets/feira-livre-mourato-coelho-2.jpg" width="1920" height="1440" alt="Barraca de frutas numa feira de São Paulo" loading="lazy"><h3>O produto presta?</h3><p>Nota 4,3 de 5 ou mais, com pelo menos 50 avaliações de quem comprou. Quando a loja não mostra quantas avaliações são, pedimos 4,5 ou mais.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- DÚVIDAS -->
+  <section class="faq" id="duvidas" aria-labelledby="duvidas-title">
+    <h2 id="duvidas-title">Dúvidas</h2>
+    <div class="faq-list">
+      <details open><summary>Eu compro aqui ou na loja?</summary><p>Na loja. O Confere. é uma vitrine: você escolhe aqui e o botão "Comprar" leva direto ao produto no site da loja, onde você paga e recebe. Não vemos seu cartão nem seus dados.</p></details>
+      <details><summary>Como o Confere. ganha dinheiro?</summary><p>Os botões de compra são links de afiliado. Quando você compra por eles, a loja nos paga uma pequena comissão. O preço para você é o mesmo, e a comissão nunca decide quem entra: loja com nota baixa fica de fora mesmo pagando mais.</p></details>
+      <details><summary>Cliquei e o preço estava diferente</summary><p>Ofertas mudam ao longo do dia. Conferimos todas as lojas uma vez por dia, à noite; a data e a hora da última conferência estão no rodapé. Vale o preço que a loja mostrar na hora da compra.</p></details>
+      <details><summary>O que a nota do Reclame Aqui quer dizer?</summary><p>É a reputação calculada com as reclamações dos últimos seis meses: se a loja responde, se resolve e se o cliente voltaria a comprar. De 8 a 10 é Ótimo, de 7 a 7,9 é Bom, de 6 a 6,9 é Regular, de 5 a 5,9 é Ruim e abaixo de 5 é Não recomendada.</p></details>
+      <details><summary>O frete está incluído?</summary><p>O preço é do produto. O frete depende do seu CEP: a loja mostra o valor exato, e se há frete grátis, antes de fechar o pedido.</p></details>
+      <details><summary>Deu problema com o pedido. E agora?</summary><p>Fale com a loja pelo canal oficial e guarde o número do pedido. Se não resolver em 7 dias, registre no Reclame Aqui e no consumidor.gov.br. Em compras online, você tem 7 dias para desistir, pelo Código de Defesa do Consumidor.</p></details>
+    </div>
+  </section>
+
+  <!-- ALERTAS -->
+  <section class="cta" id="alertas" aria-labelledby="alertas-title">
+    <a class="cta-band" id="cta-link" href="https://chat.whatsapp.com/SEU-GRUPO-AQUI" rel="noopener" target="_blank">
+      <h2 id="alertas-title" class="cta-say">Receba as ofertas conferidas no WhatsApp, uma vez por dia, sem spam.</h2>
+      <svg class="cta-arrow" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 36 36 12M16 12h20v20" fill="none" stroke="currentColor" stroke-width="4"/></svg>
+      <span class="cta-word" aria-hidden="true">Entrar</span>
+    </a>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot-cols">
+    <div class="foot-photo"><img src="assets/old-national-cash-register.jpg" width="1920" height="3018" alt="Caixa registradora antiga de metal trabalhado, num museu" loading="lazy"></div>
+    <div>
+      <h2 class="foot-h">Confere.</h2>
+      <p>Uma vitrine de ofertas em que a loja é conferida antes de você comprar.</p>
+    </div>
+    <div>
+      <h2 class="foot-h">Departamentos</h2>
+      <ul id="foot-cats"></ul>
+    </div>
+    <div>
+      <h2 class="foot-h">Última conferência</h2>
+      <p><strong id="last-check">hoje, 08:00</strong>, <span id="city">São Paulo</span></p>
+      <p id="analise"></p>
+      <p><a id="mail" href="mailto:contato@seudominio.com.br">contato@seudominio.com.br</a></p>
+    </div>
+  </div>
+  <div class="foot-mark"><p aria-hidden="true">Confere.</p></div>
+  <p class="legal">O Confere. participa de programas de afiliados e pode receber comissão pelas compras feitas pelos links, sem custo extra para você. Preços, estoque e frete podem mudar a qualquer momento; vale o que a loja mostrar. Não temos vínculo com o Reclame Aqui. Como Associado da Amazon, o Confere. recebe por compras qualificadas. Fotos de produto: das próprias lojas. © 2026 Confere.</p>
+  <p class="legal">Fotos e vídeo via Wikimedia Commons: <a href="https://commons.wikimedia.org/w/index.php?curid=119557420">“Feira Livre (Largo da Epatur, Porto Alegre)”</a>, Eugenio Hansen, OFS, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=51682010">“Feira Livre Mourato Coelho 2”</a>, Isabela Couto Barbosa, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=19488105">“Cash registers in Maxis superstore”</a>, Anefo / R. Mieremet, <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.en/">CC0</a>; <a href="https://commons.wikimedia.org/wiki/File:Tamale_Market_(No_Audio).webm">“Tamale Market”</a>, Salifu Wumpini Hussein, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=99466496">“Old National Cash Register”</a>, Biser Todorov, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p>
+</footer>
+
+<!-- PÁGINA DO PRODUTO -->
+<dialog class="pdp" id="pdp" aria-labelledby="pdp-name">
+  <form method="dialog" class="pdp-close-row"><button class="pdp-close">Fechar</button></form>
+  <div class="pdp-body">
+    <div class="pdp-img" id="pdp-img"></div>
+    <div class="pdp-info">
+      <p class="pdp-cat" id="pdp-cat"></p>
+      <h2 id="pdp-name"></h2>
+      <p class="pdp-rating" id="pdp-rating"></p>
+      <p class="pdp-price"><s id="pdp-de"></s> <strong id="pdp-por"></strong></p>
+      <p class="pdp-terms" id="pdp-terms"></p>
+      <a class="btn btn-wide" id="pdp-buy" href="#" rel="sponsored nofollow noopener" target="_blank">Comprar na loja</a>
+      <p class="pdp-note">Você vai para o site da loja para pagar e receber.</p>
+    </div>
+  </div>
+  <div class="pdp-why">
+    <h3>Por que é uma boa compra</h3>
+    <div class="why-grid">
+      <div class="why-box" id="why-preco"></div>
+      <div class="why-box" id="why-loja"></div>
+      <div class="why-box" id="why-produto"></div>
+    </div>
+  </div>
+</dialog>
+
+<script src="ofertas.js"></script>
+<script src="ilustracoes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

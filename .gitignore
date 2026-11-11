@@ -1,0 +1,7 @@
+.DS_Store
+.taste-skill/
+.claude/
+robo/robo.log
+robo/agendado.log
+robo/ultima.json
+robo/bruto.json

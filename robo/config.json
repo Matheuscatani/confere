@@ -1,0 +1,54 @@
+{
+  "_leia": "Este é o arquivo que você edita. O robô lê daqui e reescreve o ofertas.js toda noite.",
+
+  "cidade": "São Paulo",
+  "whatsapp": "https://chat.whatsapp.com/SEU-GRUPO-AQUI",
+  "email": "contato@seudominio.com.br",
+
+  "_afiliados": "Seus códigos de afiliado. Vazio = link comum, sem comissão. Em 'prefixo' cole o começo do link de redirecionamento que o programa de afiliados fornece (o endereço do produto é colocado no fim); em 'sufixo', parâmetros que vão no fim do link.",
+  "parceiroMagalu": "",
+  "associadoAmazon": "",
+  "afiliados": {
+    "Mercado Livre": { "prefixo": "", "sufixo": "" },
+    "Casas Bahia": { "prefixo": "", "sufixo": "" },
+    "Americanas": { "prefixo": "", "sufixo": "" }
+  },
+
+  "_regras": "notaMinima: nota no Reclame Aqui para a loja entrar na vitrine (as outras só aparecem na comparação de preço). porCategoria: quantas ofertas por departamento.",
+  "notaMinima": 7,
+  "porCategoria": 50,
+  "notaProduto": 4.3,
+  "avaliacoesMinimas": 50,
+  "publicar": true,
+
+  "lojas": {
+    "Magalu": "https://www.reclameaqui.com.br/empresa/magazine-luiza-loja-online/",
+    "Amazon": "https://www.reclameaqui.com.br/empresa/amazon/",
+    "Mercado Livre": "https://www.reclameaqui.com.br/empresa/mercado-livre/",
+    "Casas Bahia": "https://www.reclameaqui.com.br/empresa/casas-bahia-loja-online/",
+    "Americanas": "https://www.reclameaqui.com.br/empresa/americanas-com-loja-online/"
+  },
+
+  "excluir": "capa |capinha|pel[ií]cula|suporte|controle remoto|\\bcabo\\b|refil|adesivo|usad[oa]|recondicionad|vitrine|open box|pulseira|carregador|tela para|display|bateria para|para tv|para notebook|para celular|para iphone|para galaxy|pe[çc]a|reposi[çc][ãa]o|compat[ií]vel com|protetor|mochila|base para|limpa|kit \\d+ ",
+
+  "categorias": [
+    { "nome": "TVs", "minimo": 700, "aceita": "smart tv|televis|\\btv\\b", "buscas": [
+      ["smart tv 32", "tv"], ["smart tv 43", "tv"], ["smart tv 50", "tv"], ["smart tv 55", "tv"], ["smart tv 65", "tv"], ["smart tv 75", "tv"] ] },
+    { "nome": "Ar-condicionado", "minimo": 900, "aceita": "ar[- ]condicionado", "buscas": [
+      ["ar condicionado split inverter 9000", "ar"], ["ar condicionado split inverter 12000", "ar"], ["ar condicionado split 18000", "ar"], ["ar condicionado portatil", "arportatil"], ["ar condicionado janela", "ar"] ] },
+    { "nome": "Geladeiras", "minimo": 900, "aceita": "geladeira|refrigerador|freezer", "buscas": [
+      ["geladeira frost free", "geladeira"], ["geladeira duplex", "geladeira"], ["geladeira inverse", "geladeira"], ["geladeira side by side", "geladeira"], ["freezer vertical", "geladeira"] ] },
+    { "nome": "Lavadoras", "minimo": 350, "aceita": "lavadora|lava e seca|lava-e-seca|m[aá]quina de lavar|secadora|tanquinho", "buscas": [
+      ["lavadora de roupas 12kg", "lavadora"], ["lavadora de roupas 15kg", "lavadora"], ["lava e seca", "lavaseca"], ["maquina de lavar roupas", "lavadora"], ["secadora de roupas", "lavaseca"] ] },
+    { "nome": "Celulares", "minimo": 300, "aceita": "celular|smartphone|iphone|galaxy|motorola|moto g|xiaomi|redmi|poco|watch|rel[oó]gio", "buscas": [
+      ["smartphone samsung galaxy", "celular"], ["iphone", "celular"], ["smartphone motorola", "celular"], ["smartphone xiaomi", "celular"], ["smartwatch", "relogio"] ] },
+    { "nome": "Notebooks", "minimo": 700, "aceita": "notebook|macbook|tablet|ipad|chromebook", "buscas": [
+      ["notebook", "notebook"], ["notebook gamer", "notebook"], ["notebook i5", "notebook"], ["macbook", "notebook"], ["tablet", "notebook"] ] },
+    { "nome": "Cozinha", "minimo": 80, "aceita": "fritadeira|air ?fryer|micro-?ondas|cafeteira|liquidificador|fog[aã]o|cooktop|forno", "buscas": [
+      ["air fryer", "airfryer"], ["micro-ondas", "microondas"], ["cafeteira", "cafeteira"], ["liquidificador", "liquidificador"], ["fogao", "microondas"], ["cooktop", "microondas"] ] },
+    { "nome": "Áudio", "minimo": 60, "aceita": "fone|headphone|headset|soundbar|caixa de som|caixa ac[uú]stica|speaker", "buscas": [
+      ["fone bluetooth", "fone"], ["headphone", "fone"], ["soundbar", "soundbar"], ["caixa de som bluetooth", "caixa"], ["caixa de som jbl", "caixa"] ] },
+    { "nome": "Casa", "minimo": 80, "aceita": "aspirador|ventilador|climatizador|purificador|umidificador", "buscas": [
+      ["aspirador robo", "robo"], ["aspirador de po", "robo"], ["ventilador", "ventilador"], ["climatizador", "arportatil"], ["purificador de agua", "cafeteira"] ] }
+  ]
+}
