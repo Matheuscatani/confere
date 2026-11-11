@@ -187,6 +187,7 @@ function escrever(produtos, lojas, resumo) {
 function publicar(msg) {
   if (!cfg.publicar || !existsSync(join(RAIZ, ".git"))) { log("Publicação: pulada (sem repositório configurado)."); return; }
   const git = (...a) => execFileSync("git", a, { cwd: RAIZ, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  try { git("remote", "get-url", "origin"); } catch { log('Publicação: pulada (falta ligar o GitHub: rode "node robo/github.mjs <endereço do repositório>").'); return; }
   try {
     git("add", "ofertas.js");
     if (!git("status", "--porcelain", "ofertas.js").trim()) { log("Publicação: nada mudou."); return; }
