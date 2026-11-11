@@ -6,7 +6,9 @@ import { mkdirSync } from "node:fs";
 
 const PORTA = 9333;
 export const PERFIL = `${homedir()}/.confere-robo/chrome`;
-const BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+/* no Mac usa o Chrome instalado; num servidor Linux, o caminho vem de CHROME_BIN */
+const LINUX = process.platform === "linux";
+const BIN = process.env.CHROME_BIN || (LINUX ? "/usr/bin/google-chrome" : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 export const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function versao() {
@@ -17,7 +19,8 @@ async function versao() {
 export async function abrirChrome(urls = []) {
   if (await versao()) return false;
   mkdirSync(PERFIL, { recursive: true });
-  spawn(BIN, [`--remote-debugging-port=${PORTA}`, `--user-data-dir=${PERFIL}`, "--no-first-run", "--no-default-browser-check", "--window-size=1280,900", ...urls],
+  spawn(BIN, [`--remote-debugging-port=${PORTA}`, `--user-data-dir=${PERFIL}`, "--no-first-run", "--no-default-browser-check", "--window-size=1280,900", "--lang=pt-BR",
+    ...(LINUX ? ["--no-sandbox", "--disable-dev-shm-usage"] : []), ...urls],
     { detached: true, stdio: "ignore" }).unref();
   for (let i = 0; i < 40 && !(await versao()); i++) await espera(500);
   if (!(await versao())) throw new Error("O Chrome do robô não abriu.");
