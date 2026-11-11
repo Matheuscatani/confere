@@ -15,6 +15,7 @@
   const pixTxt = (p) => p.pix ? `${brl2(p.pix)} no Pix` : "";
   const termos = (p) => [parcela(p), pixTxt(p) && "ou " + pixTxt(p)].filter(Boolean).join(" · ");
   const tag = (p) => pct(p) > 0 ? `<span class="off">-${pct(p)}%</span>` : "";
+  const pctTxt = (p) => pct(p) > 0 ? `${pct(p)}% OFF` : "";
   const riscado = (p) => p.de > p.por ? `<s>${brl(p.de)}</s>` : "";
   /* Com os códigos de afiliado preenchidos em ofertas.js, os links das lojas viram links de afiliado. */
   const link = (p) => {
@@ -121,7 +122,7 @@
           <div class="card-body">
             <p class="card-name">${p.nome}</p>
             <p class="stars"><b>${STAR}${n1(p.estrelas)}</b>${aval(p) ? ` (${aval(p)})` : ""}</p>
-            <p class="price">${riscado(p)}<strong>${brl(p.por)}</strong></p>
+            <p class="price">${riscado(p)}<span class="price-row"><strong>${brl(p.por)}</strong>${pct(p) > 0 ? `<b class="pct">${pctTxt(p)}</b>` : ""}</span></p>
             <p class="terms">${termos(p)}</p>
             ${mc ? `<p class="beats">${brl(mc.preco - avista(p))} a menos que ${na(mc.loja)}</p>` : ""}
           </div>
@@ -176,6 +177,7 @@
   $("deal-name").textContent = d.nome;
   $("deal-de").textContent = d.de > d.por ? brl(d.de) : "";
   $("deal-por").textContent = brl(d.por);
+  $("deal-pct").textContent = pctTxt(d);
   $("deal-terms").textContent = `${termos(d)} · ${d.frete}`;
   $("deal-checks").innerHTML = `
     <li>${d.menor90 != null ? `${brl(d.menor90 - d.por)} abaixo do menor preço dos últimos 90 dias` : `${brl(d.de - (d.pix || d.por))} a menos que o preço de tabela${d.pix ? ", pagando no Pix" : ""}`}</li>
@@ -199,6 +201,7 @@
     $("pdp-rating").innerHTML = `<b>${STAR} ${n1(p.estrelas)}</b> de 5${aval(p) ? ` · ${aval(p)} avaliações` : ""}`;
     $("pdp-de").textContent = p.de > p.por ? brl(p.de) : "";
     $("pdp-por").textContent = brl(p.por);
+    $("pdp-pct").textContent = pctTxt(p);
     $("pdp-terms").textContent = `${termos(p)} · ${p.frete} · à venda ${na(p.loja)}`;
     $("pdp-buy").href = link(p);
     $("pdp-buy").textContent = `Comprar ${na(p.loja)}`;
