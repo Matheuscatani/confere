@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rasante. Passagens baratas saindo de Goiânia</title>
+<meta name="description" content="O menor preço de cada dia, de Goiânia para todo o Brasil, conferido duas vezes por dia em LATAM, GOL e Azul.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Imbue:opsz,wght@10..100,400&family=Albert+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="#">Rasante.</a>
+  <p class="top-sub">Passagens saindo de <b id="origem">Goiânia</b> · <span id="atualizado"></span></p>
+</header>
+
+<main>
+  <section class="hero" id="hero" aria-labelledby="hero-titulo"></section>
+
+  <section class="painel" aria-labelledby="painel-titulo">
+    <div class="painel-cab">
+      <h2 id="painel-titulo">Todos os destinos</h2>
+      <p class="painel-ajuda">Cada barrinha é um dia. Quanto mais baixa, mais barata; em laranja, os dias muito abaixo do preço normal. Toque num dia para ver o voo.</p>
+    </div>
+    <div class="filtros">
+      <div class="chips" id="regioes" role="group" aria-label="Região"></div>
+      <label class="so"><input type="checkbox" id="so-ofertas"> Só com oferta</label>
+      <label class="ordem"><span class="sr">Ordenar</span>
+        <select id="ordem">
+          <option value="desconto">Mais abaixo do normal</option>
+          <option value="preco">Menor preço</option>
+          <option value="nome">Nome da cidade</option>
+        </select>
+      </label>
+    </div>
+    <ol class="lista" id="lista"></ol>
+  </section>
+
+  <section class="como" id="como" aria-labelledby="como-titulo">
+    <h2 id="como-titulo">Como o Rasante. confere</h2>
+    <ol>
+      <li><b>Duas vezes por dia</b>, às 7h e às 19h, o robô lê o menor preço de cada dia dos próximos 6 meses para cada destino, juntando LATAM, GOL, Azul e quem mais voa a rota.</li>
+      <li><b>Preço normal</b> é a mediana dos preços da rota nos últimos 30 dias de coleta. Assim uma tarifa só aparece como oferta se estiver barata para aquela rota, não só barata em reais.</li>
+      <li><b>Alerta por e-mail</b> quando um dia fica <span id="regra">35%</span> ou mais abaixo do normal. Cada passagem é avisada uma vez, e de novo só se cair mais.</li>
+    </ol>
+    <p class="nota">Preços de só ida, 1 adulto, classe econômica, com taxas. Passagem barata some rápido: confira no site da companhia antes de pagar.</p>
+  </section>
+</main>
+
+<div class="dica" id="dica" role="status" hidden></div>
+
+<script src="voos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

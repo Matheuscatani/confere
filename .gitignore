@@ -5,3 +5,8 @@ robo/robo.log
 robo/agendado.log
 robo/ultima.json
 robo/bruto.json
+passagens/robo/robo.log
+passagens/robo/agendado.log
+passagens/robo/ultima.json
+passagens/robo/historico.json
+passagens/robo/avisados.json
