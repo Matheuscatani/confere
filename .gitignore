@@ -10,3 +10,4 @@ passagens/robo/agendado.log
 passagens/robo/ultima.json
 passagens/robo/historico.json
 passagens/robo/avisados.json
+passagens/robo/rodando.pid

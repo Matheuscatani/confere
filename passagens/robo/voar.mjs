@@ -8,7 +8,7 @@
    node passagens/robo/voar.mjs --local      coleta tudo e atualiza o voos.js, sem publicar e sem e-mail
    node passagens/robo/voar.mjs --so SSA,REC  relê só esses destinos e reaproveita o resto da última coleta
    node passagens/robo/voar.mjs --agendado    usado pelo agendamento: só roda se esta janela (07h ou 19h) ainda não rodou */
-import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, appendFileSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -183,6 +183,12 @@ function publicar(msg) {
 
 /* ---------- roda ---------- */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  /* um robô de cada vez: dois rodando juntos um apaga a coleta do outro */
+  const TRAVA = join(AQUI, "rodando.pid");
+  const outro = Number(lerJson(TRAVA, 0));
+  if (outro && outro !== process.pid) { try { process.kill(outro, 0); log(`Já tem uma coleta rodando (processo ${outro}); esta foi cancelada.`); process.exit(0); } catch {} }
+  writeFileSync(TRAVA, String(process.pid));
+  process.on("exit", () => { try { if (readFileSync(TRAVA, "utf8") === String(process.pid)) rmSync(TRAVA); } catch {} });
   const inicio = Date.now();
   log(TESTE ? "Início (teste)" : "Início da coleta");
   const abriu = await abrirChrome();
