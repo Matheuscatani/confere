@@ -1,0 +1,25 @@
+# Confere. · teste: o robô consegue ler as lojas a partir da nuvem do GitHub?
+# Só lê e mostra o resultado; não altera o site.
+name: Teste na nuvem
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/teste-nuvem.yml"]
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: America/Sao_Paulo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Coleta de teste (1 busca por departamento em cada loja)
+        run: xvfb-run --auto-servernum node robo/coletar.mjs --teste
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Resultado por loja" >> "$GITHUB_STEP_SUMMARY"
+          grep -E "Reclame Aqui|Pronto|ERRO|ATENÇÃO|falharam| · " robo/robo.log | sed 's/^\[[^]]*\] /- /' >> "$GITHUB_STEP_SUMMARY" || true
