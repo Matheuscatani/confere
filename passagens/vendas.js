@@ -9,7 +9,7 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   if (CHECKOUT.anual) $("#comprar-anual").href = CHECKOUT.anual;
-  if (CHECKOUT.vitalicio) { $("#comprar-vitalicio").href = CHECKOUT.vitalicio; }
+  if (CHECKOUT.vitalicio) { $("#comprar-vitalicio").href = CHECKOUT.vitalicio; $("#comprar-final").href = CHECKOUT.vitalicio; }
 
   const D = window.RASANTE;
   if (!D) return;
