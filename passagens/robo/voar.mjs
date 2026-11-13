@@ -104,24 +104,34 @@ async function lerDestino(aba, d) {
 }
 
 /* ---------- 3. Preço normal e ofertas ---------- */
-function analisar(destinos, hist) {
-  const hoje = iso(new Date()), limite = iso(somaDias(new Date(), cfg.diasMinimos)), corte = iso(somaDias(new Date(), -30));
-  for (const d of destinos) {
-    const precos = d.dias.map(([, p]) => p);
-    const h = (hist[d.iata] = (hist[d.iata] || []).filter((x) => x.d >= corte && x.d !== hoje));
-    h.push({ d: hoje, med: mediana(precos), min: Math.min(...precos) });
-    /* preço normal: a mediana dos dias, nas coletas dos últimos 30 dias */
-    d.normal = mediana(h.map((x) => x.med));
-    d.menorHistorico = Math.min(...h.map((x) => x.min));
-    const validos = d.dias.filter(([data]) => data >= limite);
-    const [data, preco] = validos.reduce((m, x) => (x[1] < m[1] ? x : m), validos[0] || [null, Infinity]);
-    d.melhor = data ? { data, preco } : null;
-    d.desconto = d.melhor ? Math.max(0, 1 - preco / d.normal) : 0;
-    d.ofertas = validos.filter(([, p]) => 1 - p / d.normal >= cfg.alertaDesconto && d.normal - p >= cfg.economiaMinima)
-      .map(([data, preco]) => ({ data, preco, desconto: 1 - preco / d.normal }));
-  }
-  return destinos;
+/* Leitura com defeito: às vezes um mês inteiro do calendário vem com números de outra moeda
+   (ex.: Vitória em maio a "R$ 89" quando o voo custava R$ 503). Preço abaixo de 30% do normal
+   da rota não existe de verdade: some daqui, e o mês que vem todo assim também. */
+function limparDias(d) {
+  const med = mediana(d.dias.map(([, p]) => p));
+  const meses = [...new Set(d.dias.map(([data]) => data.slice(0, 7)))];
+  const ruins = new Set(meses.filter((m) => mediana(d.dias.filter(([x]) => x.startsWith(m)).map(([, p]) => p)) < med * 0.45));
+  const antes = d.dias.length;
+  d.dias = d.dias.filter(([data, p]) => !ruins.has(data.slice(0, 7)) && p >= med * 0.3);
+  if (d.dias.length < antes) log(`${d.cidade} (${d.iata}): ${antes - d.dias.length} preço(s) com defeito descartados${ruins.size ? ` (mês ${[...ruins].join(", ")})` : ""}`);
 }
+
+function analisarUm(d, hist) {
+  const hoje = iso(new Date()), limite = iso(somaDias(new Date(), cfg.diasMinimos)), corte = iso(somaDias(new Date(), -30));
+  const precos = d.dias.map(([, p]) => p);
+  const h = (hist[d.iata] = (hist[d.iata] || []).filter((x) => x.d >= corte && x.d !== hoje));
+  h.push({ d: hoje, med: mediana(precos), min: Math.min(...precos) });
+  /* preço normal: a mediana dos dias, nas coletas dos últimos 30 dias */
+  d.normal = mediana(h.map((x) => x.med));
+  d.menorHistorico = Math.min(...h.map((x) => x.min));
+  const validos = d.dias.filter(([data]) => data >= limite);
+  const [data, preco] = validos.reduce((m, x) => (x[1] < m[1] ? x : m), validos[0] || [null, Infinity]);
+  d.melhor = data ? { data, preco } : null;
+  d.desconto = d.melhor ? Math.max(0, 1 - preco / d.normal) : 0;
+  d.ofertas = validos.filter(([, p]) => 1 - p / d.normal >= cfg.alertaDesconto && d.normal - p >= cfg.economiaMinima)
+    .map(([data, preco]) => ({ data, preco, desconto: 1 - preco / d.normal }));
+}
+const analisar = (destinos, hist) => { destinos.forEach((d) => analisarUm(d, hist)); return destinos; };
 
 /* ---------- 4. Escreve o voos.js ---------- */
 function escrever(destinos, resumo) {
@@ -219,12 +229,21 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (destinos.length < (TESTE ? 1 : 15)) throw new Error(`Só ${destinos.length} destinos lidos; o site anterior foi mantido.`);
 
     const hist = lerJson(HIST, {});
+    destinos.forEach(limparDias);
     analisar(destinos, hist);
     /* detalhe (companhia, horário, paradas) dos melhores preços do dia */
     const top = destinos.filter((d) => d.melhor).sort((a, b) => b.desconto - a.desconto).slice(0, TESTE ? 3 : cfg.detalhes);
+    /* e confere o preço: se a página do voo mostra bem mais caro que o calendário, vale o da página do voo */
     for (const d of top) {
-      try { await aba.ir(linkVoo(d.busca, d.melhor.data)); await espera(2500); d.detalhe = { data: d.melhor.data, ...(await aba.js(naPagina(detalhe))) }; }
-      catch (e) { log(`Detalhe ${d.iata}: falhou (${e.message.slice(0, 80)})`); }
+      for (let tentativa = 0; tentativa < 3 && d.melhor; tentativa++) {
+        try { await aba.ir(linkVoo(d.busca, d.melhor.data)); await espera(2500); d.detalhe = { data: d.melhor.data, ...(await aba.js(naPagina(detalhe))) }; }
+        catch (e) { log(`Detalhe ${d.iata}: falhou (${e.message.slice(0, 80)})`); break; }
+        const real = d.detalhe.voo && d.detalhe.voo.preco;
+        if (!real || real <= d.melhor.preco * 1.2) break;
+        log(`${d.cidade} (${d.iata}): o calendário dizia ${real ? "R$ " + d.melhor.preco : "?"} em ${d.melhor.data}, mas o voo custa R$ ${real}; corrigido`);
+        d.dias = d.dias.map(([data, p]) => [data, data === d.melhor.data ? real : p]);
+        analisarUm(d, hist);
+      }
     }
     await aba.fechar();
 
