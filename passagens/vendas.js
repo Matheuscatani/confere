@@ -58,7 +58,7 @@
   const nomes = D.destinos.map((d) => d.cidade).sort((a, b) => a.localeCompare(b));
   const volta = nomes.map((n) => `<span>${esc(n)}</span>`).join("");
   $("#trilho").innerHTML = volta + volta;
-  $("#faixa-nota").textContent = `Os ${nomes.length} destinos que o robô confere saindo de ${origem}, de ${nomes[0]} a ${nomes[nomes.length - 1]}, todos os dias.`;
+  $("#faixa-nota").textContent = `Os ${nomes.length} destinos que a equipe confere saindo de ${origem}, de ${nomes[0]} a ${nomes[nomes.length - 1]}, todos os dias.`;
 
   /* ---------- a conta do plano ---------- */
   const top = ofertas[0];
