@@ -8,3 +8,4 @@ robo/bruto.json
 passagens/robo/robo.log
 passagens/robo/agendado.log
 passagens/robo/rodando.pid
+node_modules/

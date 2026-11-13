@@ -1,4 +1,4 @@
-/* Rasante. · envia os alertas pelo Gmail, sem instalar nada (usa o curl do Mac).
+/* Rasante. · envia os alertas pelo Gmail (Nodemailer na nuvem do GitHub; no Mac, sem instalar nada, pelo curl).
    node passagens/robo/email.mjs
 
    Abre uma janela do Mac pedindo a SENHA DE APP do Gmail (não a senha da conta):
@@ -20,11 +20,25 @@ function senha(conta) {
   catch { throw new Error(`falta a senha de app do Gmail de ${conta}: cadastre o segredo GMAIL_SENHA no GitHub`); }
 }
 
-export function enviarEmail({ de, para, bcc = [], assunto, html }) {
+/* texto puro para quem não abre HTML (e para os filtros de spam, que desconfiam de e-mail só com HTML) */
+const textoPuro = (html) => html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|tr|h\d|div)>/gi, "\n").replace(/<[^>]+>/g, " ")
+  .replace(/&nbsp;/g, " ").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").trim();
+
+export async function enviarEmail({ de, para, bcc = [], assunto, html }) {
+  /* Nodemailer monta a mensagem no padrão que o Gmail confere (Message-ID, DKIM); na nuvem ele é instalado na coleta */
+  let nodemailer = null;
+  try { nodemailer = (await import("nodemailer")).default; } catch {}
+  if (nodemailer) {
+    const envio = nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, auth: { user: de, pass: senha(de) } });
+    await envio.sendMail({ from: { name: "Rasante", address: de }, to: para, bcc, subject: assunto, html, text: textoPuro(html) });
+    return;
+  }
+  /* sem Nodemailer (no Mac, sem instalar nada): mensagem montada aqui e enviada pelo curl */
   const msg = [
-    `From: Rasante. <${de}>`, `To: ${para}`, `Subject: =?UTF-8?B?${b64(assunto)}?=`, `Date: ${new Date().toUTCString()}`,
+    `From: "Rasante" <${de}>`, `To: ${para}`, `Subject: =?UTF-8?B?${b64(assunto)}?=`, `Date: ${new Date().toUTCString()}`,
+    `Message-ID: <${Date.now()}.${process.pid}.${Math.random().toString(36).slice(2)}@${de.split("@")[1]}>`,
     "MIME-Version: 1.0", "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "",
-    b64(html).replace(/.{76}/g, "$&\r\n")
+    b64(html).replace(/.{76}/g, "$&\r\n"), ""
   ].join("\r\n");
   const arq = join(tmpdir(), `rasante-${process.pid}.eml`);
   writeFileSync(arq, msg, { mode: 0o600 });
@@ -55,7 +69,7 @@ end timeout`).replace(/\s+/g, "");
     if (!/^[a-z]{16}$/i.test(s)) { aviso("A senha de app tem 16 letras (o Google mostra em 4 grupos de 4). Copie de novo e tente outra vez."); continue; }
     execFileSync("security", ["add-generic-password", "-U", "-s", SERVICO, "-a", conta, "-w", s]);
     try {
-      enviarEmail({ de: conta, para: cfg.email.para, assunto: "✈ Rasante.: alertas de passagem ligados", html: `<p>Pronto! Quando aparecer passagem saindo de ${cfg.origem.cidade} muito abaixo do preço normal, o aviso chega aqui.</p>` });
+      await enviarEmail({ de: conta, para: cfg.email.para, assunto: "✈ Rasante.: alertas de passagem ligados", html: `<p>Pronto! Quando aparecer passagem saindo de ${cfg.origem.cidade} muito abaixo do preço normal, o aviso chega aqui.</p>` });
       console.log(`E-mail de teste enviado para ${cfg.email.para}.`);
       aviso(`Pronto! Mandamos um e-mail de teste para ${cfg.email.para}. Pode voltar para o Claude.`);
       process.exit(0);

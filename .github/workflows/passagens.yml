@@ -28,6 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Nodemailer (envio do e-mail no padrão que o Gmail confere)
+        run: npm install --no-save --no-package-lock --no-audit --no-fund nodemailer@6.9.16
       - name: Chrome do robô
         id: chrome
         uses: browser-actions/setup-chrome@v1

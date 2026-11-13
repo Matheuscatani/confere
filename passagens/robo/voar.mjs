@@ -190,7 +190,7 @@ async function alertar(destinos) {
   for (let i = 0; i < Math.max(clientes.length, 1); i += 90) lotes.push(clientes.slice(i, i + 90));
   let enviados = 0, saiu = false;
   for (const bcc of lotes) {
-    try { enviarEmail({ de: cfg.email.de, para: cfg.email.para, bcc, assunto, html }); enviados += bcc.length; saiu = true; }
+    try { await enviarEmail({ de: cfg.email.de, para: cfg.email.para, bcc, assunto, html }); enviados += bcc.length; saiu = true; }
     catch (e) { log("E-mail: FALHOU ·", e.message.slice(0, 300)); }
   }
   /* só marca como avisado o que saiu de verdade; se falhou, tenta de novo na próxima hora */
