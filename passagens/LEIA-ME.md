@@ -48,3 +48,11 @@ O que o robô fez fica anotado em `robo/robo.log`.
 - `index.html`, `estilo.css`, `app.js`: o site. `voos.js`: os preços, escritos pelo robô.
 - `robo/voar.mjs`: o robô. `robo/email.mjs`: envia os alertas. Usa o mesmo Chrome do robô do Confere. (`../robo/chrome.mjs`).
 - `../.github/workflows/passagens.yml`: o agendamento de hora em hora na nuvem do GitHub.
+
+## Vendas (Wiven) e lista de clientes (Supabase)
+
+- A Wiven avisa cada venda paga, reembolso e estorno para `https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/wiven-webhook`.
+- Esse serviço (código em `servidor/wiven-webhook/`) guarda o cliente no Supabase, projeto **rasante**: plano de 1 ano (válido até 12 meses depois do pagamento) ou vitalício, pelo valor pago. Reembolso ou estorno tira o cliente da lista.
+- A cada coleta, o robô pede a lista de clientes ativos em `servidor/clientes-ativos/` e manda o alerta a todos em cópia oculta, em lotes de 90.
+- Segredos no GitHub: `GMAIL_SENHA` e `RASANTE_ROBO_TOKEN`. No Supabase, tabela `segredos`: `wiven_token` (o token que a Wiven mostra ao criar o webhook) e `robo_token`.
+- O Gmail comum aceita cerca de 500 destinatários por dia. Com muitos clientes, troque o envio por um serviço de e-mail (Brevo, Resend).

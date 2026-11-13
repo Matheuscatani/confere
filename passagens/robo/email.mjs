@@ -20,7 +20,7 @@ function senha(conta) {
   catch { throw new Error(`falta a senha de app do Gmail de ${conta}: cadastre o segredo GMAIL_SENHA no GitHub`); }
 }
 
-export function enviarEmail({ de, para, assunto, html }) {
+export function enviarEmail({ de, para, bcc = [], assunto, html }) {
   const msg = [
     `From: Rasante. <${de}>`, `To: ${para}`, `Subject: =?UTF-8?B?${b64(assunto)}?=`, `Date: ${new Date().toUTCString()}`,
     "MIME-Version: 1.0", "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "",
@@ -30,7 +30,7 @@ export function enviarEmail({ de, para, assunto, html }) {
   writeFileSync(arq, msg, { mode: 0o600 });
   try {
     /* a senha vai pela entrada do curl, não pela linha de comando */
-    execFileSync("curl", ["-sS", "--ssl-reqd", "--url", "smtps://smtp.gmail.com:465", "--mail-from", de, "--mail-rcpt", para, "--upload-file", arq, "-K", "-"],
+    execFileSync("curl", ["-sS", "--ssl-reqd", "--url", "smtps://smtp.gmail.com:465", "--mail-from", de, "--mail-rcpt", para, ...bcc.flatMap((b) => ["--mail-rcpt", b]), "--mail-rcpt-allowfails", "--upload-file", arq, "-K", "-"],
       { input: `user = "${de}:${senha(de)}"\n`, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 60000 });
   } catch (e) { throw new Error(String(e.stderr || e.message).trim()); }
   finally { rmSync(arq, { force: true }); }

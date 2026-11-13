@@ -158,7 +158,7 @@ function escrever(destinos, resumo) {
 }
 
 /* ---------- 5. Alerta por e-mail: só o que ainda não foi avisado (ou que caiu mais 5%) ---------- */
-function alertar(destinos) {
+async function alertar(destinos) {
   const avisados = lerJson(AVISADOS, {}), hoje = iso(new Date()), novos = [];
   for (const k of Object.keys(avisados)) if (k.split("|")[1] < hoje) delete avisados[k];
   for (const d of destinos) {
@@ -183,12 +183,30 @@ function alertar(destinos) {
   const html = `<div style="font-family:Arial,sans-serif;max-width:620px;color:#111"><h2 style="margin:0 0 4px">Passagens muito abaixo do preço saindo de ${cfg.origem.cidade}</h2>
     <p style="margin:0 0 12px;color:#555">Só ida, 1 adulto, menor preço do dia entre as companhias. Preço confere no momento da coleta (${new Date().toLocaleString("pt-BR")}); passagem barata some rápido.</p>
     <table style="width:100%;border-collapse:collapse">${linhas}</table>
-    <p style="color:#777;font-size:12px;margin-top:16px">Rasante. · alerta quando o preço fica ${Math.round(cfg.alertaDesconto * 100)}% ou mais abaixo do normal da rota. Mude isso em passagens/robo/config.json.</p></div>`;
-  try {
-    enviarEmail({ de: cfg.email.de, para: cfg.email.para, assunto, html });
+    <p style="color:#777;font-size:12px;margin-top:16px">Rasante · você recebe este alerta porque assinou o Rasante. Avisamos quando a passagem fica ${Math.round(cfg.alertaDesconto * 100)}% ou mais abaixo do preço normal da rota, conferida na página do voo. Dúvidas: responda este e-mail.</p></div>`;
+  /* clientes que pagaram (lista no Supabase, alimentada pela Wiven): vão em cópia oculta, um não vê o outro */
+  const clientes = await clientesAtivos();
+  const lotes = [];
+  for (let i = 0; i < Math.max(clientes.length, 1); i += 90) lotes.push(clientes.slice(i, i + 90));
+  let enviados = 0;
+  for (const bcc of lotes) {
+    try { enviarEmail({ de: cfg.email.de, para: cfg.email.para, bcc, assunto, html }); enviados += bcc.length; }
+    catch (e) { log("E-mail: FALHOU ·", e.message.slice(0, 300)); }
+  }
+  if (enviados || !clientes.length) {
     writeFileSync(AVISADOS, JSON.stringify(avisados, null, 1));
-    log(`E-mail: enviado com ${novos.length} destino(s) para ${cfg.email.para}.`);
-  } catch (e) { log("E-mail: FALHOU ·", e.message.slice(0, 300)); }
+    log(`E-mail: enviado com ${novos.length} destino(s) para ${cfg.email.para} e ${enviados} cliente(s).`);
+  }
+}
+
+async function clientesAtivos() {
+  const token = process.env.RASANTE_ROBO_TOKEN;
+  if (!token || !cfg.clientesUrl) return [];
+  try {
+    const r = await fetch(cfg.clientesUrl, { headers: { "x-robo-token": token }, signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return (await r.json()).emails || [];
+  } catch (e) { log(`Clientes: não consegui ler a lista (${e.message}); o alerta vai só para ${cfg.email.para}`); return []; }
 }
 
 /* ---------- 6. Publica (GitHub Pages, o mesmo repositório do Confere.) ---------- */
@@ -294,7 +312,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       writeFileSync(ULTIMA, JSON.stringify({ quando: new Date().toISOString(), destinos: destinos.map(({ iata, dias }) => ({ iata, dias })) }));
     }
     log(`Pronto: ${resumo.destinos} destinos, ${resumo.dias} dias com preço, ${resumo.ofertas} passagens muito abaixo do normal, em ${Math.round((Date.now() - inicio) / 60000)} min.` + (falharam.length ? ` Falharam: ${falharam.join(", ")}` : ""));
-    if (!LOCAL) { alertar(destinos); publicar(`Passagens de ${new Date().toLocaleString("pt-BR")}: ${resumo.ofertas} abaixo do normal em ${resumo.destinos} destinos`); }
+    if (!LOCAL) { await alertar(destinos); publicar(`Passagens de ${new Date().toLocaleString("pt-BR")}: ${resumo.ofertas} abaixo do normal em ${resumo.destinos} destinos`); }
   } catch (e) {
     log("ERRO:", e.message); process.exitCode = 1;
   } finally {
