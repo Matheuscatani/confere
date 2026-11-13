@@ -1,0 +1,31 @@
+# Rasante. · teste rápido do e-mail: manda uma mensagem de teste usando o segredo GMAIL_SENHA.
+# Roda sozinho quando este arquivo muda, ou pelo botão "Run workflow" na aba Actions.
+name: Teste do e-mail
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/teste-email.yml"]
+jobs:
+  email:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      TZ: America/Sao_Paulo
+      GMAIL_SENHA: ${{ secrets.GMAIL_SENHA }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Manda o e-mail de teste
+        run: |
+          node --input-type=module -e '
+          import { readFileSync } from "node:fs";
+          import { enviarEmail } from "./passagens/robo/email.mjs";
+          const cfg = JSON.parse(readFileSync("passagens/robo/config.json", "utf8"));
+          if (!process.env.GMAIL_SENHA) { console.log("FALTA o segredo GMAIL_SENHA"); process.exit(1); }
+          console.log("senha com", process.env.GMAIL_SENHA.replace(/\s+/g, "").length, "caracteres");
+          enviarEmail({ de: cfg.email.de, para: cfg.email.para, assunto: "✈ Rasante.: teste do e-mail de alertas",
+            html: "<p>Se este e-mail chegou, os alertas de passagem do Rasante estão ligados. Enviado pela nuvem do GitHub em " + new Date().toLocaleString("pt-BR") + ".</p>" });
+          console.log("ENVIADO para", cfg.email.para);'
