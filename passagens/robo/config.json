@@ -12,6 +12,9 @@
   "diasMinimos": 3,
   "meses": 6,
   "detalhes": 15,
+  "_duploCheck": "suspeito: preço abaixo dessa fração da mediana da rota (0.5 = metade) é conferido na página do voo antes de entrar no site ou no e-mail. conferenciasPorDestino: quantos dias suspeitos conferir por destino em cada coleta.",
+  "suspeito": 0.5,
+  "conferenciasPorDestino": 3,
   "publicar": true,
 
   "_destinos": "Código do aeroporto (ou da cidade: SAO, RIO, BHZ juntam todos os aeroportos dela), cidade, estado e região. Um quinto item opcional muda o que o robô digita no Google Voos, para códigos que ele confunde (BEL virava Bélgica).",

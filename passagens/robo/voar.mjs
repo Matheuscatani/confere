@@ -104,16 +104,12 @@ async function lerDestino(aba, d) {
 }
 
 /* ---------- 3. Preço normal e ofertas ---------- */
-/* Leitura com defeito: às vezes um mês inteiro do calendário vem com números de outra moeda
-   (ex.: Vitória em maio a "R$ 89" quando o voo custava R$ 503). Preço abaixo de 30% do normal
-   da rota não existe de verdade: some daqui, e o mês que vem todo assim também. */
-function limparDias(d) {
-  const med = mediana(d.dias.map(([, p]) => p));
-  const meses = [...new Set(d.dias.map(([data]) => data.slice(0, 7)))];
-  const ruins = new Set(meses.filter((m) => mediana(d.dias.filter(([x]) => x.startsWith(m)).map(([, p]) => p)) < med * 0.45));
-  const antes = d.dias.length;
-  d.dias = d.dias.filter(([data, p]) => !ruins.has(data.slice(0, 7)) && p >= med * 0.3);
-  if (d.dias.length < antes) log(`${d.cidade} (${d.iata}): ${antes - d.dias.length} preço(s) com defeito descartados${ruins.size ? ` (mês ${[...ruins].join(", ")})` : ""}`);
+/* Preço muito baixo pode ser uma tarifa extraordinária de verdade ou uma leitura com defeito
+   (ex.: Vitória em maio a "R$ 89" quando o voo custava R$ 503: o calendário veio em outra moeda).
+   Por isso nada é descartado na hora: o preço suspeito é conferido na página do voo daquele dia. */
+function suspeitos(d) {
+  const med = mediana(d.dias.map(([, p]) => p)), limite = iso(somaDias(new Date(), cfg.diasMinimos));
+  return d.dias.filter(([data, p]) => data >= limite && p < med * cfg.suspeito).sort((x, y) => x[1] - y[1]);
 }
 
 function analisarUm(d, hist) {
@@ -126,7 +122,7 @@ function analisarUm(d, hist) {
   d.menorHistorico = Math.min(...h.map((x) => x.min));
   const validos = d.dias.filter(([data]) => data >= limite);
   const [data, preco] = validos.reduce((m, x) => (x[1] < m[1] ? x : m), validos[0] || [null, Infinity]);
-  d.melhor = data ? { data, preco } : null;
+  d.melhor = data ? { data, preco, conferido: !!(d.conferidos && d.conferidos.has(data)) } : null;
   d.desconto = d.melhor ? Math.max(0, 1 - preco / d.normal) : 0;
   d.ofertas = validos.filter(([, p]) => 1 - p / d.normal >= cfg.alertaDesconto && d.normal - p >= cfg.economiaMinima)
     .map(([data, preco]) => ({ data, preco, desconto: 1 - preco / d.normal }));
@@ -154,7 +150,10 @@ function alertar(destinos) {
   for (const d of destinos) {
     const nova = d.ofertas.filter((o) => !avisados[d.iata + "|" + o.data] || o.preco <= avisados[d.iata + "|" + o.data] * 0.95);
     if (!nova.length) continue;
-    const melhor = nova.reduce((m, o) => (o.preco < m.preco ? o : m));
+    /* só vai para o e-mail o preço que passou pelo duplo check na página do voo */
+    const conferidas = nova.filter((o) => d.conferidos && d.conferidos.has(o.data));
+    if (!conferidas.length) { log(`E-mail: ${d.cidade} ficou fora (preço não conferido na página do voo)`); continue; }
+    const melhor = conferidas.reduce((m, o) => (o.preco < m.preco ? o : m));
     novos.push({ d, melhor, outras: nova.length - 1 });
     nova.forEach((o) => (avisados[d.iata + "|" + o.data] = o.preco));
   }
@@ -229,20 +228,47 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (destinos.length < (TESTE ? 1 : 15)) throw new Error(`Só ${destinos.length} destinos lidos; o site anterior foi mantido.`);
 
     const hist = lerJson(HIST, {});
-    destinos.forEach(limparDias);
+
+    /* duplo check: abre a página do voo e compara com o calendário.
+       Confere (até 20% de diferença): o preço fica, mesmo extraordinário. Não confere: vale o preço da página do voo. */
+    const conferir = async (d, data) => {
+      try { await aba.ir(linkVoo(d.busca, data)); await espera(2500); return { data, ...(await aba.js(naPagina(detalhe))) }; }
+      catch (e) { log(`Conferência ${d.iata} ${data}: falhou (${e.message.slice(0, 80)})`); return null; }
+    };
+    const aplicar = (d, det, preco) => {
+      const real = det && det.voo && det.voo.preco;
+      if (!real) return "sem";
+      if (real <= preco * 1.2) { (d.conferidos ||= new Set()).add(det.data); return "ok"; }
+      d.dias = d.dias.map(([x, p]) => [x, x === det.data ? real : p]);
+      return "errado";
+    };
+    for (const d of destinos) {
+      const lista = suspeitos(d); if (!lista.length) continue;
+      let ok = 0, errados = 0, vistos = 0;
+      for (const [data, preco] of lista.slice(0, cfg.conferenciasPorDestino)) {
+        const det = await conferir(d, data), r = aplicar(d, det, preco); vistos++;
+        if (r === "ok") { ok++; if (!d.detalhe) d.detalhe = det; }
+        else if (r === "errado") { errados++; log(`${d.cidade} (${d.iata}): calendário dizia R$ ${preco} em ${data}, a página do voo diz R$ ${d.dias.find(([x]) => x === data)[1]}; corrigido`); }
+        else { if (det) { d.dias = d.dias.filter(([x]) => x !== data); log(`${d.cidade} (${d.iata}): nenhum voo na página para ${data}; preço do calendário descartado`); } break; }
+      }
+      /* o que não deu para conferir: se algum conferido estava errado, os parecidos também estão (fora); se todos conferiram, ficam */
+      const resto = lista.slice(vistos).map(([x]) => x);
+      if (errados || !ok) { d.dias = d.dias.filter(([x]) => !resto.includes(x)); if (resto.length) log(`${d.cidade} (${d.iata}): ${resto.length} preço(s) baixo(s) sem conferência descartados`); }
+      if (ok) log(`${d.cidade} (${d.iata}): ${ok} preço(s) muito baixo(s) conferido(s) na página do voo e mantido(s)`);
+    }
     analisar(destinos, hist);
-    /* detalhe (companhia, horário, paradas) dos melhores preços do dia */
+
+    /* os melhores do dia: companhia, horário, paradas, e o duplo check do preço que vai para o site e para o e-mail */
     const top = destinos.filter((d) => d.melhor).sort((a, b) => b.desconto - a.desconto).slice(0, TESTE ? 3 : cfg.detalhes);
-    /* e confere o preço: se a página do voo mostra bem mais caro que o calendário, vale o da página do voo */
     for (const d of top) {
       for (let tentativa = 0; tentativa < 3 && d.melhor; tentativa++) {
-        try { await aba.ir(linkVoo(d.busca, d.melhor.data)); await espera(2500); d.detalhe = { data: d.melhor.data, ...(await aba.js(naPagina(detalhe))) }; }
-        catch (e) { log(`Detalhe ${d.iata}: falhou (${e.message.slice(0, 80)})`); break; }
-        const real = d.detalhe.voo && d.detalhe.voo.preco;
-        if (!real || real <= d.melhor.preco * 1.2) break;
-        log(`${d.cidade} (${d.iata}): o calendário dizia ${real ? "R$ " + d.melhor.preco : "?"} em ${d.melhor.data}, mas o voo custa R$ ${real}; corrigido`);
-        d.dias = d.dias.map(([data, p]) => [data, data === d.melhor.data ? real : p]);
+        const det = d.conferidos && d.conferidos.has(d.melhor.data) && d.detalhe && d.detalhe.data === d.melhor.data ? d.detalhe : await conferir(d, d.melhor.data);
+        if (!det) break;
+        d.detalhe = det;
+        const preco = d.melhor.preco, r = aplicar(d, det, preco);
+        if (r === "errado") log(`${d.cidade} (${d.iata}): calendário dizia R$ ${preco} em ${det.data}, a página do voo diz R$ ${det.voo.preco}; corrigido`);
         analisarUm(d, hist);
+        if (r !== "errado") break;
       }
     }
     await aba.fechar();
