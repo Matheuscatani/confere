@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rasante · Passagens baratas saindo de Goiânia</title>
+<meta name="description" content="O menor preço de cada dia, de Goiânia para todo o Brasil, conferido duas vezes por dia em LATAM, GOL e Azul.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <a class="logo" href="./" aria-label="Rasante, início">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="var(--sun)"/><path d="M8 25c7-1 14-4 24-12l-2 7c-6 4-13 6-22 5Z" fill="#fff"/><path d="M15 21 11 13h4l7 6Z" fill="#fff"/></svg>
+      rasante
+    </a>
+    <span class="saida"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z" fill="currentColor"/></svg><span class="longo">Saindo de&nbsp;</span><b id="origem">Goiânia</b></span>
+    <a class="top-cta" href="#alertas">Alertas por e-mail</a>
+  </div>
+</header>
+
+<section class="hero" id="topo">
+  <div class="hero-in">
+    <p class="hero-tag" id="atualizado">Preços conferidos hoje</p>
+    <h1>Voe barato saindo de Goiânia</h1>
+    <p class="hero-sub">Todo dia, de manhã e à noite, conferimos LATAM, GOL e Azul para <b id="n-destinos">43 destinos</b> e mostramos quando a passagem está bem abaixo do preço normal.</p>
+  </div>
+  <form class="busca" id="busca" role="search" onsubmit="return false">
+    <label class="campo">
+      <span>Para onde?</span>
+      <input id="f-texto" type="search" list="cidades" placeholder="Qualquer destino" autocomplete="off">
+      <datalist id="cidades"></datalist>
+    </label>
+    <label class="campo">
+      <span>Quando?</span>
+      <select id="f-mes"><option value="">Qualquer data</option></select>
+    </label>
+    <label class="campo">
+      <span>Região</span>
+      <select id="f-regiao"><option value="">Todo o Brasil</option></select>
+    </label>
+    <button class="btn btn-sun" type="submit" id="buscar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      Buscar passagens
+    </button>
+  </form>
+</section>
+
+<main>
+  <section class="bloco" id="promocoes" aria-labelledby="promo-titulo">
+    <div class="bloco-cab">
+      <div>
+        <h2 id="promo-titulo">Muito abaixo do preço agora</h2>
+        <p>Passagens só de ida pelo menos <b id="regra">35%</b> mais baratas que o normal da rota.</p>
+      </div>
+    </div>
+    <div class="promos" id="promos"></div>
+  </section>
+
+  <section class="bloco" id="destinos" aria-labelledby="dest-titulo">
+    <div class="bloco-cab">
+      <div>
+        <h2 id="dest-titulo">Todos os destinos</h2>
+        <p id="dest-sub">O menor preço de cada destino nos próximos 6 meses.</p>
+      </div>
+      <label class="ordem"><span>Ordenar por</span>
+        <select id="ordem">
+          <option value="desconto">Maior desconto</option>
+          <option value="preco">Menor preço</option>
+          <option value="nome">Cidade (A–Z)</option>
+        </select>
+      </label>
+    </div>
+    <div class="abas" id="abas" role="tablist" aria-label="Região"></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="bloco como" aria-labelledby="como-titulo">
+    <h2 id="como-titulo">Como funciona</h2>
+    <div class="passos">
+      <article>
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13.5 21 6l-4.5 15-4-6.5L3 13.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
+        <h3>Conferimos todas as companhias</h3>
+        <p>Às 7h e às 19h o robô lê o menor preço de cada dia dos próximos 6 meses, juntando LATAM, GOL, Azul e quem mais voa a rota.</p>
+      </article>
+      <article>
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+        <h3>Comparamos com o preço normal</h3>
+        <p>Cada rota tem seu preço normal, calculado com as coletas dos últimos 30 dias. Oferta é o que fica bem abaixo dele, não só o que parece barato.</p>
+      </article>
+      <article>
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
+        <h3>Avisamos por e-mail</h3>
+        <p>Quando o preço despenca, chega um e-mail com o destino, a data e o link do voo. Cada passagem é avisada uma vez.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="alerta" id="alertas" aria-labelledby="alerta-titulo">
+    <div>
+      <h2 id="alerta-titulo">Passagem barata some rápido</h2>
+      <p>Os alertas por e-mail estão ligados: quando aparecer uma passagem muito abaixo do preço saindo de Goiânia, você fica sabendo na hora da coleta.</p>
+    </div>
+    <svg class="alerta-arte" viewBox="0 0 200 120" aria-hidden="true"><path d="M10 100 C60 90 120 60 190 15" stroke="#fff" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round" fill="none" opacity=".7"/><g transform="translate(150 28) rotate(-28)"><path d="M-22 0h44l8-3-8-3h-44z" fill="#fff"/><path d="M-4-3 6-20h7L6-3zM-4 0 6 17h7L6 0zM-20-3l-5-9h5l7 9z" fill="#fff"/></g></svg>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>Preços de passagem só de ida, 1 adulto, classe econômica, com taxas, no momento da coleta. Confira no site da companhia antes de pagar.</p>
+  <p>Fotos: Wikimedia Commons.</p>
+</footer>
+
+<dialog class="cal" id="cal" aria-labelledby="cal-titulo">
+  <button class="fechar" type="button" id="cal-fechar" aria-label="Fechar">×</button>
+  <div class="cal-foto" id="cal-foto"></div>
+  <div class="cal-in">
+    <p class="cal-rota" id="cal-rota"></p>
+    <h2 id="cal-titulo"></h2>
+    <div class="cal-resumo" id="cal-resumo"></div>
+    <div class="meses" id="cal-meses" role="tablist" aria-label="Mês"></div>
+    <div class="legenda"><span class="l-of">Muito abaixo</span><span class="l-ok">Abaixo do normal</span><span class="l-alto">Acima do normal</span></div>
+    <div class="grade" id="cal-grade"></div>
+    <p class="cal-nota">Toque num dia para abrir o voo e ver as companhias.</p>
+  </div>
+</dialog>
+
+<script src="voos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

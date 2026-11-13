@@ -3,132 +3,185 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rasante · Passagens baratas saindo de Goiânia</title>
-<meta name="description" content="O menor preço de cada dia, de Goiânia para todo o Brasil, conferido de hora em hora em LATAM, GOL e Azul.">
+<title>Rasante · Alerta de passagem barata saindo de Goiânia</title>
+<meta name="description" content="Um robô confere 43 destinos saindo de Goiânia às 7h e às 19h e te avisa por e-mail quando a passagem cai bem abaixo do preço normal. R$ 29,99 por ano ou R$ 49,99 para sempre.">
+<script>document.documentElement.classList.add("js")</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="estilo.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendas.css">
 </head>
 <body>
 
-<header class="top">
-  <div class="top-in">
-    <a class="logo" href="./" aria-label="Rasante, início">
-      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="var(--sun)"/><path d="M8 25c7-1 14-4 24-12l-2 7c-6 4-13 6-22 5Z" fill="#fff"/><path d="M15 21 11 13h4l7 6Z" fill="#fff"/></svg>
-      rasante
-    </a>
-    <span class="saida"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z" fill="currentColor"/></svg><span class="longo">Saindo de&nbsp;</span><b id="origem">Goiânia</b></span>
-    <a class="top-cta" href="#alertas">Alertas por e-mail</a>
-  </div>
+<header class="nav">
+  <a class="marca" href="./">rasante</a>
+  <nav aria-label="Seções">
+    <a href="#alerta">O alerta</a>
+    <a href="#como">Como funciona</a>
+    <a href="#planos">Planos</a>
+  </nav>
 </header>
 
-<section class="hero" id="topo">
-  <div class="hero-in">
-    <p class="hero-tag" id="atualizado">Preços conferidos hoje</p>
-    <h1>Voe barato saindo de Goiânia</h1>
-    <p class="hero-sub">De hora em hora, conferimos LATAM, GOL e Azul para <b id="n-destinos">43 destinos</b> e mostramos quando a passagem está bem abaixo do preço normal.</p>
-  </div>
-  <form class="busca" id="busca" role="search" onsubmit="return false">
-    <label class="campo">
-      <span>Para onde?</span>
-      <input id="f-texto" type="search" list="cidades" placeholder="Qualquer destino" autocomplete="off">
-      <datalist id="cidades"></datalist>
-    </label>
-    <label class="campo">
-      <span>Quando?</span>
-      <select id="f-mes"><option value="">Qualquer data</option></select>
-    </label>
-    <label class="campo">
-      <span>Região</span>
-      <select id="f-regiao"><option value="">Todo o Brasil</option></select>
-    </label>
-    <button class="btn btn-sun" type="submit" id="buscar">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
-      Buscar passagens
-    </button>
-  </form>
-</section>
-
 <main>
-  <section class="bloco" id="promocoes" aria-labelledby="promo-titulo">
-    <div class="bloco-cab">
-      <div>
-        <h2 id="promo-titulo">Muito abaixo do preço agora</h2>
-        <p>Passagens só de ida pelo menos <b id="regra">35%</b> mais baratas que o normal da rota.</p>
+  <!-- capa: cartaz de aeroporto -->
+  <section class="capa" aria-labelledby="titulo">
+    <div class="capa-campo">
+      <h1 id="titulo">Passagem<br>lá embaixo.</h1>
+      <figure class="capa-foto shutter">
+        <img src="fotos/JJD.jpg" alt="Pedra Furada, em Jericoacoara, no fim da tarde" width="760" height="1013">
+      </figure>
+    </div>
+    <div class="capa-faixa">
+      <p>Um robô confere 43 destinos saindo de Goiânia às 7h e às 19h e te manda um e-mail quando a passagem cai bem abaixo do preço normal. <b>A partir de R$ 29,99 por ano.</b></p>
+      <a class="acao" href="#planos">Quero os alertas</a>
+    </div>
+  </section>
+
+  <!-- o que chega no e-mail, com os preços de verdade da última coleta -->
+  <section class="alerta" id="alerta" aria-labelledby="alerta-titulo">
+    <div class="alerta-lista" data-reveal>
+      <h2 id="alerta-titulo">O e-mail que você recebe</h2>
+      <p class="alerta-sub" id="alerta-sub">Ofertas reais da última coleta. Toque num destino.</p>
+      <div class="nomes" id="nomes" role="tablist" aria-label="Destinos em oferta"></div>
+    </div>
+    <div class="palco">
+      <article class="email" id="email" data-ui aria-live="polite"></article>
+    </div>
+  </section>
+
+  <!-- como funciona: um itinerário impresso -->
+  <section class="como" id="como" aria-labelledby="como-titulo">
+    <div class="como-texto" data-reveal>
+      <h2 id="como-titulo">Um robô de plantão</h2>
+      <p>Você não precisa abrir site de companhia todo dia nem saber se R$ 500 para Fortaleza é caro ou barato. O Rasante faz isso por você, duas vezes por dia, e só te chama quando vale a pena.</p>
+      <p>Ele junta as tarifas de LATAM, GOL e Azul, guarda o preço normal de cada rota e compara.</p>
+    </div>
+    <div class="bilhete" data-reveal>
+      <p class="bilhete-cab">Rasante · GYN Santa Genoveva</p>
+      <h3>07:00</h3>
+      <ul>
+        <li><span>Confere os 43 destinos</span><i></i><span>6 meses à frente</span></li>
+        <li><span>Lê o menor preço de cada dia</span><i></i><span>8 mil preços</span></li>
+        <li><span>Compara com o normal da rota</span><i></i><span>últimos 30 dias</span></li>
+      </ul>
+      <h3>07:25</h3>
+      <ul>
+        <li><span>Separa o que caiu 35% ou mais</span><i></i><span>e R$ 150 de economia</span></li>
+        <li><span>Anota companhia, horário e paradas</span><i></i><span>dos melhores</span></li>
+        <li><span>Atualiza o seu painel de preços</span><i></i><span>na hora</span></li>
+      </ul>
+      <h3>19:00</h3>
+      <ul>
+        <li><span>Tudo de novo</span><i></i><span>preço muda à tarde</span></li>
+      </ul>
+      <p class="bilhete-fim"><span>Você recebe o e-mail</span><span>antes de esgotar</span></p>
+    </div>
+  </section>
+
+  <!-- prova: os destinos correndo -->
+  <section class="destinos" aria-labelledby="destinos-titulo">
+    <h2 id="destinos-titulo" class="sr">Os 43 destinos</h2>
+    <div class="faixa" aria-hidden="true"><div class="faixa-trilho" id="trilho"></div></div>
+    <p class="faixa-nota" id="faixa-nota">Os 43 destinos que o robô confere saindo de Goiânia, de Jericoacoara a Boa Vista, todos os dias.</p>
+  </section>
+
+  <!-- planos: dois cartões de embarque -->
+  <section class="planos" id="planos" aria-labelledby="planos-titulo">
+    <h2 id="planos-titulo">Escolha o seu bilhete</h2>
+    <p class="planos-sub">Pagamento único no Pix ou no cartão. Sem mensalidade escondida.</p>
+
+    <article class="ticket">
+      <div class="ticket-corpo">
+        <img class="ticket-foto" src="fotos/FOR.jpg" alt="Orla de Fortaleza vista do alto" width="760" height="506" loading="lazy">
+        <h3>1 ano de alertas</h3>
+        <ul>
+          <li>E-mail quando a passagem despenca</li>
+          <li>Painel com o calendário de preços</li>
+          <li>43 destinos, conferidos às 7h e às 19h</li>
+          <li>7 dias para desistir, dinheiro de volta</li>
+        </ul>
       </div>
-    </div>
-    <div class="promos" id="promos"></div>
-  </section>
-
-  <section class="bloco" id="destinos" aria-labelledby="dest-titulo">
-    <div class="bloco-cab">
-      <div>
-        <h2 id="dest-titulo">Todos os destinos</h2>
-        <p id="dest-sub">O menor preço de cada destino nos próximos 6 meses.</p>
+      <div class="ticket-canhoto">
+        <p class="preco"><small>R$</small>29,99</p>
+        <p class="preco-nota">por 12 meses, R$ 2,50 por mês</p>
+        <a class="ticket-acao" id="comprar-anual" href="#planos">Assinar 1 ano</a>
       </div>
-      <label class="ordem"><span>Ordenar por</span>
-        <select id="ordem">
-          <option value="desconto">Maior desconto</option>
-          <option value="preco">Menor preço</option>
-          <option value="nome">Cidade (A–Z)</option>
-        </select>
-      </label>
-    </div>
-    <div class="abas" id="abas" role="tablist" aria-label="Região"></div>
-    <div class="cards" id="cards"></div>
+    </article>
+
+    <article class="ticket ticket-vit">
+      <div class="ticket-corpo">
+        <img class="ticket-foto" src="fotos/SSA.jpg" alt="Salvador vista do mar" width="760" height="506" loading="lazy">
+        <h3>Acesso vitalício</h3>
+        <ul>
+          <li>Tudo do plano de 1 ano, para sempre</li>
+          <li>Paga uma vez, nunca renova</li>
+          <li>Novos destinos sem custo extra</li>
+          <li>7 dias para desistir, dinheiro de volta</li>
+        </ul>
+      </div>
+      <div class="ticket-canhoto">
+        <p class="preco"><small>R$</small>49,99</p>
+        <p class="preco-nota">uma vez só, sai mais barato que 2 anos</p>
+        <a class="ticket-acao" id="comprar-vitalicio" href="#planos">Quero vitalício</a>
+      </div>
+    </article>
+
+    <p class="planos-conta" id="conta">Uma única passagem para Jericoacoara no dia certo economiza R$ 540. O plano de um ano custa R$ 29,99.</p>
   </section>
 
-  <section class="bloco como" aria-labelledby="como-titulo">
-    <h2 id="como-titulo">Como funciona</h2>
-    <div class="passos">
-      <article>
-        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13.5 21 6l-4.5 15-4-6.5L3 13.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
-        <h3>Conferimos todas as companhias</h3>
-        <p>De hora em hora, a equipe lê o menor preço de cada dia dos próximos 6 meses, juntando LATAM, GOL, Azul e quem mais voa a rota.</p>
-      </article>
-      <article>
-        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-        <h3>Comparamos com o preço normal</h3>
-        <p>Cada rota tem seu preço normal, calculado com as coletas dos últimos 30 dias. Oferta é o que fica bem abaixo dele, não só o que parece barato.</p>
-      </article>
-      <article>
-        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
-        <h3>Avisamos por e-mail</h3>
-        <p>Quando o preço despenca, chega um e-mail com o destino, a data e o link do voo. Cada passagem é avisada uma vez.</p>
-      </article>
+  <!-- dúvidas: fichas de arquivo -->
+  <section class="duvidas" aria-labelledby="duvidas-titulo">
+    <h2 id="duvidas-titulo">Antes de embarcar</h2>
+    <div class="fichas" id="fichas" data-reveal>
+      <details class="ficha" open>
+        <summary><span class="aba">Origem</span><span class="pergunta">Serve para quem não sai de Goiânia?</span></summary>
+        <p>Hoje o Rasante confere voos saindo do aeroporto de Goiânia (GYN). Quem mora em Anápolis, Trindade, Aparecida e região usa normalmente. Se você embarca em Brasília, ele ainda não é para você.</p>
+      </details>
+      <details class="ficha">
+        <summary><span class="aba">Companhias</span><span class="pergunta">Quais companhias aéreas entram?</span></summary>
+        <p>LATAM, GOL e Azul, e qualquer outra que esteja vendendo a rota. O robô lê o menor preço do dia entre todas elas, com as taxas incluídas.</p>
+      </details>
+      <details class="ficha">
+        <summary><span class="aba">Compra</span><span class="pergunta">Vocês vendem a passagem?</span></summary>
+        <p>Não. O alerta traz o destino, a data e o link do voo. Você compra direto no site da companhia ou da agência que preferir, sem taxa nossa.</p>
+      </details>
+      <details class="ficha">
+        <summary><span class="aba">Preço</span><span class="pergunta">O preço do e-mail é garantido?</span></summary>
+        <p>É o preço no momento da coleta. Passagem barata costuma sumir em horas, por isso o robô confere de manhã e à noite e o e-mail vai na mesma hora. Confira no site antes de pagar.</p>
+      </details>
+      <details class="ficha">
+        <summary><span class="aba">Acesso</span><span class="pergunta">Como eu recebo depois de pagar?</span></summary>
+        <p>Assim que o pagamento é aprovado, você recebe no e-mail o acesso ao painel de preços e passa a receber os alertas a partir da próxima coleta.</p>
+      </details>
+      <details class="ficha">
+        <summary><span class="aba">Garantia</span><span class="pergunta">E se eu não gostar?</span></summary>
+        <p>Você tem 7 dias para pedir o dinheiro de volta, sem precisar explicar o motivo. É o seu direito de arrependimento em compras pela internet.</p>
+      </details>
     </div>
   </section>
 
-  <section class="alerta" id="alertas" aria-labelledby="alerta-titulo">
-    <div>
-      <h2 id="alerta-titulo">Passagem barata some rápido</h2>
-      <p>Os alertas por e-mail estão ligados: quando aparecer uma passagem muito abaixo do preço saindo de Goiânia, você fica sabendo na hora da coleta.</p>
-    </div>
-    <svg class="alerta-arte" viewBox="0 0 200 120" aria-hidden="true"><path d="M10 100 C60 90 120 60 190 15" stroke="#fff" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round" fill="none" opacity=".7"/><g transform="translate(150 28) rotate(-28)"><path d="M-22 0h44l8-3-8-3h-44z" fill="#fff"/><path d="M-4-3 6-20h7L6-3zM-4 0 6 17h7L6 0zM-20-3l-5-9h5l7 9z" fill="#fff"/></g></svg>
-  </section>
+  <a class="final" id="comprar-final" href="#planos">
+    <span class="final-frase">Escolha o plano e receba o próximo alerta já na coleta das 19h.</span>
+    <svg class="final-seta" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 36 36 12M16 12h20v20" fill="none" stroke="currentColor" stroke-width="5"/></svg>
+    <span class="final-palavra">Assinar</span>
+  </a>
 </main>
 
 <footer class="rodape">
-  <p>Preços de passagem só de ida, 1 adulto, classe econômica, com taxas, no momento da coleta. Confira no site da companhia antes de pagar.</p>
-  <p>Fotos: Wikimedia Commons.</p>
+  <div class="rodape-topo">
+    <p><b>rasante</b> · alertas de passagem barata saindo de Goiânia</p>
+    <p>Preços de só ida, 1 adulto, com taxas, no momento da coleta.</p>
+    <a href="#titulo">Voltar ao topo</a>
+  </div>
+  <a class="rodape-contato" id="contato" href="mailto:contato@seudominio.com.br">contato@<br>seudominio.com.br</a>
+  <div class="rodape-pe">
+    <a href="painel.html">Painel de preços</a>
+    <span>Fotos: Wikimedia Commons</span>
+    <span>Goiânia, 2026</span>
+  </div>
 </footer>
 
-<dialog class="cal" id="cal" aria-labelledby="cal-titulo">
-  <button class="fechar" type="button" id="cal-fechar" aria-label="Fechar">×</button>
-  <div class="cal-foto" id="cal-foto"></div>
-  <div class="cal-in">
-    <p class="cal-rota" id="cal-rota"></p>
-    <h2 id="cal-titulo"></h2>
-    <div class="cal-resumo" id="cal-resumo"></div>
-    <div class="meses" id="cal-meses" role="tablist" aria-label="Mês"></div>
-    <div class="legenda"><span class="l-of">Muito abaixo</span><span class="l-ok">Abaixo do normal</span><span class="l-alto">Acima do normal</span></div>
-    <div class="grade" id="cal-grade"></div>
-    <p class="cal-nota">Toque num dia para abrir o voo e ver as companhias.</p>
-  </div>
-</dialog>
-
 <script src="voos.js"></script>
-<script src="app.js"></script>
+<script src="vendas.js"></script>
 </body>
 </html>
