@@ -188,12 +188,13 @@ async function alertar(destinos) {
   const clientes = await clientesAtivos();
   const lotes = [];
   for (let i = 0; i < Math.max(clientes.length, 1); i += 90) lotes.push(clientes.slice(i, i + 90));
-  let enviados = 0;
+  let enviados = 0, saiu = false;
   for (const bcc of lotes) {
-    try { enviarEmail({ de: cfg.email.de, para: cfg.email.para, bcc, assunto, html }); enviados += bcc.length; }
+    try { enviarEmail({ de: cfg.email.de, para: cfg.email.para, bcc, assunto, html }); enviados += bcc.length; saiu = true; }
     catch (e) { log("E-mail: FALHOU ·", e.message.slice(0, 300)); }
   }
-  if (enviados || !clientes.length) {
+  /* só marca como avisado o que saiu de verdade; se falhou, tenta de novo na próxima hora */
+  if (saiu) {
     writeFileSync(AVISADOS, JSON.stringify(avisados, null, 1));
     log(`E-mail: enviado com ${novos.length} destino(s) para ${cfg.email.para} e ${enviados} cliente(s).`);
   }
@@ -201,7 +202,7 @@ async function alertar(destinos) {
 
 async function clientesAtivos() {
   const token = process.env.RASANTE_ROBO_TOKEN;
-  if (!token || !cfg.clientesUrl) return [];
+  if (!token || !cfg.clientesUrl) { log(`Clientes: falta o segredo RASANTE_ROBO_TOKEN; o alerta vai só para ${cfg.email.para}`); return []; }
   try {
     const r = await fetch(cfg.clientesUrl, { headers: { "x-robo-token": token }, signal: AbortSignal.timeout(20000) });
     if (!r.ok) throw new Error("HTTP " + r.status);

@@ -1,7 +1,7 @@
 # Rasante. · o robô das passagens roda aqui, na nuvem do GitHub, de hora em hora (sempre aos 7 minutos).
 # Lê os preços, atualiza passagens/voos.js, publica o site e manda o e-mail dos alertas.
 # Segredos (Settings → Secrets and variables → Actions): GMAIL_SENHA (senha de app do Gmail)
-# e RASANTE_ROBO_TOKEN (lê a lista de clientes no Supabase).
+# e RASANTE_ROBO_TOKEN (lê a lista de clientes no Supabase). Cadastrados em 13/11/2026.
 name: Passagens
 on:
   schedule:
