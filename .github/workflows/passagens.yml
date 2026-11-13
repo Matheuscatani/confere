@@ -16,26 +16,38 @@ concurrency:
   cancel-in-progress: false
 jobs:
   coleta:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
       TZ: America/Sao_Paulo
-      LANG: pt_BR.UTF-8
-      LANGUAGE: pt_BR:pt
       GMAIL_SENHA: ${{ secrets.GMAIL_SENHA }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Chrome do robô
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
       - name: Quem assina as atualizações
         run: |
           git config user.name "Rasante robô"
           git config user.email "robo@confere.invalid"
       - name: Coleta das passagens
         run: xvfb-run --auto-servernum node passagens/robo/voar.mjs
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
       - name: Resumo
         if: always()
         run: |
           echo "## Passagens saindo de Goiânia" >> "$GITHUB_STEP_SUMMARY"
           sed 's/^\[[^]]*\] /- /' passagens/robo/robo.log >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Guarda o registro quando a coleta falha (para ver o erro sem login)
+        if: failure()
+        run: |
+          cp passagens/robo/robo.log passagens/robo/erro.log 2>/dev/null || echo "sem registro" > passagens/robo/erro.log
+          git add passagens/robo/erro.log
+          git commit -m "Passagens: registro da coleta que falhou" -- passagens/robo/erro.log || exit 0
+          git pull --rebase --autostash && git push
