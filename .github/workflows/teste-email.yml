@@ -24,8 +24,9 @@ jobs:
           import { readFileSync } from "node:fs";
           import { enviarEmail } from "./passagens/robo/email.mjs";
           const cfg = JSON.parse(readFileSync("passagens/robo/config.json", "utf8"));
-          if (!process.env.GMAIL_SENHA) { console.log("FALTA o segredo GMAIL_SENHA"); process.exit(1); }
-          console.log("senha com", process.env.GMAIL_SENHA.replace(/\s+/g, "").length, "caracteres");
-          enviarEmail({ de: cfg.email.de, para: cfg.email.para, assunto: "✈ Rasante.: teste do e-mail de alertas",
+          if (!process.env.GMAIL_SENHA) { console.log("::error::FALTA o segredo GMAIL_SENHA"); process.exit(1); }
+          const s = process.env.GMAIL_SENHA.replace(/\s+/g, "");
+          console.log("::notice::senha com " + s.length + " caracteres, so letras: " + /^[a-z]+$/i.test(s));
+          try { enviarEmail({ de: cfg.email.de, para: cfg.email.para, assunto: "✈ Rasante.: teste do e-mail de alertas",
             html: "<p>Se este e-mail chegou, os alertas de passagem do Rasante estão ligados. Enviado pela nuvem do GitHub em " + new Date().toLocaleString("pt-BR") + ".</p>" });
-          console.log("ENVIADO para", cfg.email.para);'
+          console.log("::notice::ENVIADO para " + cfg.email.para); } catch (e) { console.log("::error::" + String(e.message).replace(/\n/g, " ").slice(0, 400)); process.exit(1); }'
