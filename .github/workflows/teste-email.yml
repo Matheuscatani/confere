@@ -1,4 +1,5 @@
-# Rasante. · teste rápido do e-mail: manda uma mensagem de teste usando o segredo GMAIL_SENHA.
+# Rasante. · teste rápido do e-mail: manda uma mensagem de teste usando o segredo GMAIL_SENHA
+# (senha de app da conta que envia, rasante.gyn@gmail.com).
 # Roda sozinho quando este arquivo muda, ou pelo botão "Run workflow" na aba Actions.
 name: Teste do e-mail
 on:

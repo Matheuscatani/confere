@@ -4,7 +4,7 @@
   "origem": { "iata": "GYN", "cidade": "Goiânia" },
 
   "_email": "para: quem recebe os alertas. de: a conta Gmail que envia (a senha de app dela fica nas Chaves do Mac; rode 'node passagens/robo/email.mjs' uma vez).",
-  "email": { "para": "flachinvestidor@gmail.com", "de": "flachinvestidor@gmail.com" },
+  "email": { "para": "flachinvestidor@gmail.com", "de": "rasante.gyn@gmail.com" },
   "_clientes": "Lista de quem pagou na Wiven (Supabase). O robô lê com o segredo RASANTE_ROBO_TOKEN do GitHub e manda o alerta a todos em cópia oculta.",
   "clientesUrl": "https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/clientes-ativos",
 
