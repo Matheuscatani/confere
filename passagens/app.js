@@ -24,6 +24,10 @@
 
   /* ---------- cabeçalho e busca ---------- */
   $("#origem").textContent = `${D.origem.cidade} (${D.origem.iata})`;
+  /* ao lado de Goiânia, a hora da última conferência (com o dia, se não for hoje) */
+  const conferido = new Date(D.atualizado), hora = conferido.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const dia = conferido.toDateString() === new Date().toDateString() ? "" : conferido.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " ";
+  document.querySelector(".saida").insertAdjacentHTML("beforeend", `<span class="hora">&nbsp;· <span class="longo">conferido&nbsp;</span>${dia}às ${hora}</span>`);
   $("#atualizado").textContent = "Preços conferidos em " + new Date(D.atualizado).toLocaleString("pt-BR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
   $("#n-destinos").textContent = destinos.length + " destinos";
   $("#regra").textContent = pct(REGRA);
@@ -63,7 +67,7 @@
         <span class="por"><small>R$</small> ${Math.round(x.preco).toLocaleString("pt-BR")}</span>
         <span class="quando">${dataCurta(x.data)}${x.voo ? " · " + esc(x.voo.cia) : ""}</span>
         <span class="ver">Ver datas e preços</span>
-      </button>`).join("") : `<p class="vazio">Nenhuma passagem ${pct(REGRA)} abaixo do normal com esse filtro agora. Os preços são conferidos às 7h e às 19h.</p>`;
+      </button>`).join("") : `<p class="vazio">Nenhuma passagem ${pct(REGRA)} abaixo do normal com esse filtro agora. Os preços são conferidos de hora em hora.</p>`;
   }
 
   /* ---------- cartões ---------- */

@@ -1,11 +1,10 @@
-# Rasante. · o robô das passagens roda aqui, na nuvem do GitHub, às 7h e às 19h (horário de Brasília).
+# Rasante. · o robô das passagens roda aqui, na nuvem do GitHub, de hora em hora (sempre aos 7 minutos).
 # Lê os preços, atualiza passagens/voos.js, publica o site e manda o e-mail dos alertas.
 # A senha de app do Gmail fica no segredo GMAIL_SENHA (Settings → Secrets and variables → Actions).
 name: Passagens
 on:
   schedule:
-    - cron: "0 10 * * *"   # 07:00 em Brasília
-    - cron: "0 22 * * *"   # 19:00 em Brasília
+    - cron: "7 * * * *"   # toda hora, aos 7 minutos (a hora cheia é a mais disputada no GitHub)
   workflow_dispatch:
   push:
     branches: [main]
@@ -18,9 +17,11 @@ concurrency:
 jobs:
   coleta:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 55
     env:
       TZ: America/Sao_Paulo
+      LANG: pt_BR.UTF-8
+      LANGUAGE: pt_BR:pt
       GMAIL_SENHA: ${{ secrets.GMAIL_SENHA }}
     steps:
       - uses: actions/checkout@v4

@@ -4,7 +4,7 @@ Passagens baratas saindo de Goiânia para todo o Brasil. Mostra o menor preço d
 
 ## Como funciona
 
-Duas vezes por dia, às 07:00 e às 19:00, o robô roda na nuvem do GitHub (GitHub Actions, gratuito), sem usar o seu Mac:
+De hora em hora (aos 7 minutos de cada hora), o robô roda na nuvem do GitHub (GitHub Actions, gratuito), sem usar o seu Mac. Cada coleta leva uns 25 minutos:
 
 1. abre o Google Voos para cada destino e lê o calendário com o menor preço de cada dia (junta LATAM, GOL, Azul e as outras que voam a rota);
 2. calcula o preço normal de cada rota: a mediana dos preços nas coletas dos últimos 30 dias;
@@ -47,4 +47,4 @@ O que o robô fez fica anotado em `robo/robo.log`.
 
 - `index.html`, `estilo.css`, `app.js`: o site. `voos.js`: os preços, escritos pelo robô.
 - `robo/voar.mjs`: o robô. `robo/email.mjs`: envia os alertas. Usa o mesmo Chrome do robô do Confere. (`../robo/chrome.mjs`).
-- `../.github/workflows/passagens.yml`: o agendamento das 07:00 e 19:00 na nuvem do GitHub.
+- `../.github/workflows/passagens.yml`: o agendamento de hora em hora na nuvem do GitHub.

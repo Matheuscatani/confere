@@ -7,7 +7,7 @@
    node passagens/robo/voar.mjs --teste       só 3 destinos, sem publicar e sem e-mail
    node passagens/robo/voar.mjs --local      coleta tudo e atualiza o voos.js, sem publicar e sem e-mail
    node passagens/robo/voar.mjs --so SSA,REC  relê só esses destinos e reaproveita o resto da última coleta
-   node passagens/robo/voar.mjs --agendado    usado pelo agendamento: só roda se esta janela (07h ou 19h) ainda não rodou */
+   node passagens/robo/voar.mjs --agendado    para agendar no Mac (hoje quem agenda é o GitHub, de hora em hora) */
 import { readFileSync, writeFileSync, existsSync, appendFileSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
@@ -30,7 +30,7 @@ const mediana = (v) => { const s = v.slice().sort((a, b) => a - b); return s.len
 const real = (n) => "R$ " + Math.round(n).toLocaleString("pt-BR");
 const dataBr = (d) => new Date(d + "T12:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
 
-/* Duas coletas por dia, às 07:00 e às 19:00. Se o Mac estava desligado, roda na primeira chance. */
+/* Agendado no Mac (não usado hoje: o GitHub roda de hora em hora): duas janelas por dia, 07:00 e 19:00. */
 if (arg("--agendado")) {
   const ult = lerJson(ULTIMA, {}).quando, agora = new Date();
   const marco = new Date(agora); marco.setMinutes(0, 0, 0);
@@ -89,18 +89,32 @@ async function detalhe() {
 
 async function lerDestino(aba, d) {
   const url = linkVoo(d.busca, iso(somaDias(new Date(), 7)));
-  /* menos de ~4 meses de preços deixa o "preço normal" torto: tenta de novo e fica com a leitura mais longa */
+  /* menos de ~4 meses de preços deixa o "preço normal" torto: tenta de novo e fica com a leitura mais longa.
+     Mês com preços em outra moeda (o servidor do GitHub fica nos EUA e às vezes o Google manda um mês em dólar
+     marcado como real): a leitura não serve, tenta de novo. */
   const esperado = 30 * (cfg.meses - 2);
-  let dias = [], erro = "";
-  for (let t = 0; t < 3 && dias.length < esperado; t++) {
+  let dias = [], erro = "", estranhos = [];
+  for (let t = 0; t < 3 && (dias.length < esperado || estranhos.length); t++) {
     let lidos = [];
     try { await aba.ir(url); await espera(2500); lidos = await aba.js(naPagina(calendario, cfg.meses - 1), 120000); erro = ""; }
     catch (e) { erro = e.message; }
-    if (lidos.length > dias.length) dias = lidos;
-    if (dias.length < esperado) await espera(/BLOQUEIO/.test(erro) ? 90000 : 6000);
+    const ruins = mesesEmOutraMoeda(lidos);
+    if (ruins.length) log(`${d.cidade} (${d.iata}): mês ${ruins.join(", ")} veio com preços de outra moeda; lendo de novo`);
+    if (!dias.length || ruins.length < estranhos.length || (ruins.length === estranhos.length && lidos.length > dias.length)) { dias = lidos; estranhos = ruins; }
+    if (dias.length < esperado || estranhos.length) await espera(/BLOQUEIO/.test(erro) ? 90000 : 6000);
   }
+  /* se nem lendo de novo veio certo, o mês em outra moeda fica de fora */
+  if (estranhos.length) { dias = dias.filter(([data]) => !estranhos.includes(data.slice(0, 7))); log(`${d.cidade} (${d.iata}): mês ${estranhos.join(", ")} descartado (moeda errada)`); }
   if (dias.length < 20) throw new Error(erro || `só ${dias.length} dias com preço`);
   return dias;
+}
+
+/* mês cuja mediana fica abaixo de 30% da mediana da rota: é a mesma passagem em dólar (R$ 503 ≈ US$ 89), não promoção */
+function mesesEmOutraMoeda(dias) {
+  if (dias.length < 40) return [];
+  const med = mediana(dias.map(([, p]) => p));
+  return [...new Set(dias.map(([data]) => data.slice(0, 7)))]
+    .filter((m) => { const ps = dias.filter(([x]) => x.startsWith(m)).map(([, p]) => p); return ps.length >= 7 && mediana(ps) < med * 0.3; });
 }
 
 /* ---------- 3. Preço normal e ofertas ---------- */
@@ -139,7 +153,7 @@ function escrever(destinos, resumo) {
       dias: d.dias.map(([data, p]) => data + ":" + p).join(" ")
     }))
   };
-  const cab = `/*\n  Rasante. · passagens baratas saindo de ${cfg.origem.cidade}\n  ---------------------------------------------------------------\n  NÃO EDITE ESTE ARQUIVO: o robô reescreve ele duas vezes por dia.\n  As regras ficam em passagens/robo/config.json.\n\n  Última coleta: ${new Date().toLocaleString("pt-BR")}\n  ${resumo.destinos} destinos · ${resumo.dias} dias com preço · ${resumo.ofertas} passagens muito abaixo do normal\n*/\n\n`;
+  const cab = `/*\n  Rasante. · passagens baratas saindo de ${cfg.origem.cidade}\n  ---------------------------------------------------------------\n  NÃO EDITE ESTE ARQUIVO: o robô reescreve ele de hora em hora.\n  As regras ficam em passagens/robo/config.json.\n\n  Última coleta: ${new Date().toLocaleString("pt-BR")}\n  ${resumo.destinos} destinos · ${resumo.dias} dias com preço · ${resumo.ofertas} passagens muito abaixo do normal\n*/\n\n`;
   writeFileSync(join(SITE, "voos.js"), cab + "window.RASANTE = " + JSON.stringify(dados, null, 1) + ";\n");
 }
 
