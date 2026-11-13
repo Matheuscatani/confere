@@ -1,0 +1,40 @@
+# Rasante. · o robô das passagens roda aqui, na nuvem do GitHub, às 7h e às 19h (horário de Brasília).
+# Lê os preços, atualiza passagens/voos.js, publica o site e manda o e-mail dos alertas.
+# A senha de app do Gmail fica no segredo GMAIL_SENHA (Settings → Secrets and variables → Actions).
+name: Passagens
+on:
+  schedule:
+    - cron: "0 10 * * *"   # 07:00 em Brasília
+    - cron: "0 22 * * *"   # 19:00 em Brasília
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/passagens.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: passagens
+  cancel-in-progress: false
+jobs:
+  coleta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TZ: America/Sao_Paulo
+      GMAIL_SENHA: ${{ secrets.GMAIL_SENHA }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Quem assina as atualizações
+        run: |
+          git config user.name "Rasante robô"
+          git config user.email "robo@confere.invalid"
+      - name: Coleta das passagens
+        run: xvfb-run --auto-servernum node passagens/robo/voar.mjs
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Passagens saindo de Goiânia" >> "$GITHUB_STEP_SUMMARY"
+          sed 's/^\[[^]]*\] /- /' passagens/robo/robo.log >> "$GITHUB_STEP_SUMMARY" || true

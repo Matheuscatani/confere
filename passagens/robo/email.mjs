@@ -14,8 +14,10 @@ const SERVICO = "rasante-gmail";
 const b64 = (s) => Buffer.from(s, "utf8").toString("base64");
 
 function senha(conta) {
+  /* na nuvem do GitHub a senha vem do segredo GMAIL_SENHA; no Mac, das Chaves */
+  if (process.env.GMAIL_SENHA) return process.env.GMAIL_SENHA.replace(/\s+/g, "");
   try { return execFileSync("security", ["find-generic-password", "-s", SERVICO, "-a", conta, "-w"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); }
-  catch { throw new Error(`falta a senha de app do Gmail de ${conta}: rode "node passagens/robo/email.mjs"`); }
+  catch { throw new Error(`falta a senha de app do Gmail de ${conta}: cadastre o segredo GMAIL_SENHA no GitHub`); }
 }
 
 export function enviarEmail({ de, para, assunto, html }) {

@@ -172,10 +172,14 @@ function alertar(destinos) {
 function publicar(msg) {
   if (!cfg.publicar || !existsSync(join(RAIZ, ".git"))) { log("Publicação: pulada."); return; }
   const git = (...a) => execFileSync("git", a, { cwd: RAIZ, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  /* o site e a memória do robô (preço normal, avisos já mandados): na nuvem, cada coleta começa do zero e lê daqui */
+  const arquivos = ["passagens/voos.js", ...[ULTIMA, HIST, AVISADOS].filter(existsSync).map((f) => "passagens/robo/" + f.split("/").pop())];
   try {
-    git("add", "passagens/voos.js");
-    if (!git("status", "--porcelain", "passagens/voos.js").trim()) { log("Publicação: nada mudou."); return; }
-    git("commit", "-m", msg, "--", "passagens/voos.js");
+    git("add", ...arquivos);
+    if (!git("status", "--porcelain", ...arquivos).trim()) { log("Publicação: nada mudou."); return; }
+    git("commit", "-m", msg, "--", ...arquivos);
+    /* o robô do Confere. também publica no mesmo repositório: junta antes de enviar */
+    git("pull", "--rebase", "--autostash");
     git("push");
     log("Publicação: site atualizado no GitHub.");
   } catch (e) { log("Publicação: FALHOU ·", (e.stderr || e.message).toString().slice(0, 300)); }
