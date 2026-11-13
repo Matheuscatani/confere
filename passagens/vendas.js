@@ -1,7 +1,7 @@
 /* Rasante · página de vendas: o e-mail de exemplo e a faixa de destinos saem dos preços reais do voos.js */
 (() => {
-  /* Links do pagamento (Kiwify, Hotmart, Mercado Pago…). Enquanto vazios, os botões levam para os planos. */
-  const CHECKOUT = { anual: "", vitalicio: "" };
+  /* Links do pagamento na Kiwify (produto Rasante, uma oferta para cada plano). Vazios, os botões levam para os planos. */
+  const CHECKOUT = { anual: "https://pay.kiwify.com.br/cllMDNS", vitalicio: "https://pay.kiwify.com.br/M8Yt5l7" };
 
   const $ = (s) => document.querySelector(s);
   const real = (n) => "R$ " + Math.round(n).toLocaleString("pt-BR");

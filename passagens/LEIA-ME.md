@@ -49,10 +49,12 @@ O que o robô fez fica anotado em `robo/robo.log`.
 - `robo/voar.mjs`: o robô. `robo/email.mjs`: envia os alertas. Usa o mesmo Chrome do robô do Confere. (`../robo/chrome.mjs`).
 - `../.github/workflows/passagens.yml`: o agendamento de hora em hora na nuvem do GitHub.
 
-## Vendas (Wiven) e lista de clientes (Supabase)
+## Vendas (Kiwify) e lista de clientes (Supabase)
 
-- A Wiven avisa cada venda paga, reembolso e estorno para `https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/wiven-webhook`.
-- Esse serviço (código em `servidor/wiven-webhook/`) guarda o cliente no Supabase, projeto **rasante**: plano de 1 ano (válido até 12 meses depois do pagamento) ou vitalício, pelo valor pago. Reembolso ou estorno tira o cliente da lista.
+- Produto **Rasante** na Kiwify, com duas ofertas: 1 ano de alertas (R$ 29,99, https://pay.kiwify.com.br/cllMDNS) e Acesso vitalício (R$ 49,99, https://pay.kiwify.com.br/M8Yt5l7). Os links estão em `vendas.js` e nos botões do `index.html`.
+- O webhook "Rasante lista de clientes" da Kiwify (compra aprovada, reembolso, chargeback) avisa `https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/kiwify-webhook`.
+- Esse serviço (código em `servidor/kiwify-webhook/`) confere a assinatura da Kiwify e guarda o cliente no Supabase, projeto **rasante**: 1 ano (válido até 12 meses depois do pagamento) ou vitalício, pelo nome da oferta ou pelo valor cobrado. Reembolso ou chargeback tira o cliente da lista.
 - A cada coleta, o robô pede a lista de clientes ativos em `servidor/clientes-ativos/` e manda o alerta a todos em cópia oculta, em lotes de 90.
-- Segredos no GitHub: `GMAIL_SENHA` e `RASANTE_ROBO_TOKEN`. No Supabase, tabela `segredos`: `wiven_token` (o token que a Wiven mostra ao criar o webhook) e `robo_token`.
+- Segredos no GitHub: `GMAIL_SENHA` (senha de app de rasante.gyn@gmail.com) e `RASANTE_ROBO_TOKEN`. No Supabase, tabela `segredos`: `kiwify_token` (o token do webhook na Kiwify) e `robo_token`.
+- `servidor/wiven-webhook/` é da tentativa com a Wiven e não é usado.
 - O Gmail comum aceita cerca de 500 destinatários por dia. Com muitos clientes, troque o envio por um serviço de e-mail (Brevo, Resend).
