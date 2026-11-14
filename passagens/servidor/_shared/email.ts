@@ -76,12 +76,36 @@ export function montar(m: Modelo) {
   return { html, texto };
 }
 
-export async function enviar(para: string, assunto: string, m: Modelo) {
+/* Envio: pelo Resend, com o domínio do Rasante (avisos@rasantegyn.com.br, assinado com SPF/DKIM: não cai no spam).
+   As respostas vão para o Gmail do Rasante. Sem a chave RESEND_API_KEY, ou se o Resend falhar, sai pelo Gmail como antes. */
+export const DE_DOMINIO = "Rasante <avisos@rasantegyn.com.br>";
+export const textoPuro = (html: string) => html.replace(/<div style="display:none[^]*?<\/div>/, "").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|tr|h\d|div)>/gi, "\n")
+  .replace(/<a [^>]*href="([^"]+)"[^>]*>([^<]*)<\/a>/gi, "$2: $1").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&rarr;/g, "→")
+  .replace(/&amp;/g, "&").replace(/&#\d+;/g, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").trim();
+
+export async function resend(mensagens: { para: string; assunto: string; html: string; texto: string }[]) {
+  const chave = Deno.env.get("RESEND_API_KEY");
+  if (!chave) throw new Error("sem RESEND_API_KEY");
+  const corpo = mensagens.map((m) => ({ from: DE_DOMINIO, to: [m.para], reply_to: REMETENTE, subject: m.assunto, html: m.html, text: m.texto }));
+  const r = await fetch(corpo.length > 1 ? "https://api.resend.com/emails/batch" : "https://api.resend.com/emails", {
+    method: "POST", headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
+    body: JSON.stringify(corpo.length > 1 ? corpo : corpo[0]), signal: AbortSignal.timeout(30000),
+  });
+  if (!r.ok) throw new Error(`Resend HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+}
+
+async function gmail(para: string, assunto: string, html: string, texto: string) {
   const senha = (Deno.env.get("GMAIL_SENHA") || "").replace(/\s+/g, "");
   if (!senha) throw new Error("sem GMAIL_SENHA");
-  const { html, texto } = montar(m);
   const envio = nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, auth: { user: REMETENTE, pass: senha } });
   await envio.sendMail({ from: { name: "Rasante", address: REMETENTE }, to: para, subject: assunto, html, text: texto });
+}
+
+export async function enviar(para: string, assunto: string, m: Modelo) {
+  const { html, texto } = montar(m);
+  try { await resend([{ para, assunto, html, texto }]); return; }
+  catch (e) { console.error("e-mail pelo Resend:", (e as Error).message, "· indo pelo Gmail"); }
+  await gmail(para, assunto, html, texto);
 }
 
 /* os dois e-mails que levam ao link de criar ou trocar a senha */
@@ -100,7 +124,7 @@ export function emailCriarSenha(nome: string | null, plano: string, valido_ate: 
     aviso: "O link vale por 7 dias. Depois disso, é só pedir outro em “Esqueci minha senha”.",
     passos: comprou ? [
       { titulo: "Crie sua senha", texto: "Pelo botão acima. Ela é só sua e entra em qualquer aparelho." },
-      { titulo: "Abra o painel quando quiser", texto: "O menor preço de cada dia para 43 destinos, conferido de hora em hora." },
+      { titulo: "Abra o painel quando quiser", texto: "O menor preço de cada dia para 43 destinos, conferido a cada 30 minutos." },
       { titulo: "Fique de olho neste e-mail", texto: "Quando uma passagem ficar muito abaixo do preço normal, a gente te avisa aqui." },
     ] : undefined,
   }];

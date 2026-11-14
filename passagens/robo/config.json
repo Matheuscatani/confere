@@ -6,6 +6,7 @@
   "_email": "para: quem recebe os alertas. de: a conta Gmail que envia (a senha de app dela fica nas Chaves do Mac; rode 'node passagens/robo/email.mjs' uma vez).",
   "email": { "para": "flachinvestidor@gmail.com", "de": "rasante.gyn@gmail.com" },
   "_clientes": "Lista de quem pagou na Kiwify (Supabase). O robô lê com o segredo RASANTE_ROBO_TOKEN do GitHub e manda o alerta a todos em cópia oculta.",
+  "alertaUrl": "https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/enviar-alerta",
   "clientesUrl": "https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/clientes-ativos",
   "_memoria": "Onde o robô guarda os preços do painel e a memória dele (só com o segredo RASANTE_ROBO_TOKEN). O painel só mostra os preços para quem assinou.",
   "memoriaUrl": "https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/robo",

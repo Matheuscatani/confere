@@ -206,14 +206,26 @@ async function alertar(destinos) {
   const assunto = `✈ ${cfg.origem.cidade} → ${p.d.cidade} por ${real(p.melhor.preco)} (${Math.round(p.melhor.desconto * 100)}% abaixo do normal)` + (novos.length > 1 ? ` + ${novos.length - 1} destino(s)` : "");
   const quando = new Date().toLocaleString("pt-BR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).replace(",", " às");
   const html = alertaHtml({ origem: cfg.origem.cidade, novos, linkVoo, desconto: cfg.alertaDesconto, quando });
-  /* clientes que pagaram (lista no Supabase, alimentada pela Kiwify): vão em cópia oculta, um não vê o outro */
+  /* clientes que pagaram (lista no Supabase, alimentada pela Kiwify) */
   const clientes = (await clientesAtivos()).filter((e) => e !== cfg.email.para);
-  const lotes = [];
-  for (let i = 0; i < Math.max(clientes.length, 1); i += 90) lotes.push(clientes.slice(i, i + 90));
   let enviados = 0, saiu = false;
-  for (const bcc of lotes) {
-    try { await enviarEmail({ de: cfg.email.de, para: cfg.email.para, bcc, assunto, html }); enviados += bcc.length; saiu = true; }
-    catch (e) { log("E-mail: FALHOU ·", e.message.slice(0, 300)); }
+  /* 1º: pelo Resend, com o domínio do Rasante e um e-mail para cada pessoa (não cai no spam) */
+  try {
+    const r = await fetch(cfg.alertaUrl, { method: "POST", headers: { "x-robo-token": process.env.RASANTE_ROBO_TOKEN || "", "Content-Type": "application/json" },
+      body: JSON.stringify({ assunto, html, para: [cfg.email.para, ...clientes] }), signal: AbortSignal.timeout(90000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro || "HTTP " + r.status);
+    enviados = j.enviados - 1; saiu = true;
+    if (j.falhas && j.falhas.length) log("E-mail: parte não saiu pelo Resend ·", j.falhas.join(" | ").slice(0, 300));
+  } catch (e) { log(`E-mail: Resend não mandou (${e.message.slice(0, 200)}); indo pelo Gmail`); }
+  /* reserva: pelo Gmail, clientes em cópia oculta (um não vê o outro) */
+  if (!saiu) {
+    const lotes = [];
+    for (let i = 0; i < Math.max(clientes.length, 1); i += 90) lotes.push(clientes.slice(i, i + 90));
+    for (const bcc of lotes) {
+      try { await enviarEmail({ de: cfg.email.de, para: cfg.email.para, bcc, assunto, html }); enviados += bcc.length; saiu = true; }
+      catch (e) { log("E-mail: FALHOU ·", e.message.slice(0, 300)); }
+    }
   }
   /* só marca como avisado o que saiu de verdade; se falhou, tenta de novo na próxima hora */
   if (saiu) {
