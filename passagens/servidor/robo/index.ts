@@ -1,13 +1,13 @@
 // Rasante · memória do robô do GitHub (Supabase Edge Function).
 // Os preços não ficam mais no repositório público: o robô lê e grava aqui.
 // GET  → { ultima, historico, avisados }
-// POST { painel?, ultima?, historico?, avisados? } → grava o que vier
+// POST { painel?, amostra?, ultima?, historico?, avisados? } → grava o que vier
 // Só responde com o cabeçalho x-robo-token igual ao segredo "robo_token" (no GitHub: RASANTE_ROBO_TOKEN).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-const NOMES = ["painel", "ultima", "historico", "avisados"];
+const NOMES = ["painel", "amostra", "ultima", "historico", "avisados"];
 const resp = (status: number, corpo: unknown) => new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
 
 Deno.serve(async (req) => {

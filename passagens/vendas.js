@@ -1,4 +1,4 @@
-/* Rasante · página de vendas: o e-mail de exemplo e a faixa de destinos saem dos preços reais da amostra.js (as 5 maiores ofertas da última coleta) */
+/* Rasante · página de vendas: o e-mail de exemplo e a faixa de destinos saem da amostra do servidor (as 5 maiores ofertas da última coleta) */
 (() => {
   /* Links do pagamento na Kiwify (produto Rasante, uma oferta para cada plano). Vazios, os botões levam para os planos. */
   const CHECKOUT = { anual: "https://pay.kiwify.com.br/cllMDNS", vitalicio: "https://pay.kiwify.com.br/M8Yt5l7" };

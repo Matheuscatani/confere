@@ -183,7 +183,10 @@
   </div>
 </footer>
 
-<script src="amostra.js"></script>
-<script src="vendas.js"></script>
+<script>
+  /* as 5 maiores ofertas da última coleta vêm do servidor; sem elas a página funciona igual, só sem o e-mail de exemplo */
+  fetch("https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/amostra").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && d.destinos) window.RASANTE = d; }).catch(() => {})
+    .finally(() => { const s = document.createElement("script"); s.src = "vendas.js"; document.body.appendChild(s); });
+</script>
 </body>
 </html>

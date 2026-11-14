@@ -162,7 +162,7 @@ function escrever(destinos, resumo) {
   const amostra = { atualizado: dados.atualizado, origem: dados.origem, alertaDesconto: dados.alertaDesconto,
     destinos: dados.destinos.map(({ dias, ...d }) => (top.has(d.iata) ? d : { iata: d.iata, cidade: d.cidade })) };
   writeFileSync(join(SITE, "amostra.js"), `/* Rasante · amostra pública para a página de vendas (o robô reescreve de hora em hora). Os preços completos ficam no painel. */\nwindow.RASANTE = ${JSON.stringify(amostra)};\n`);
-  return dados;
+  return { dados, amostra };
 }
 
 /* ---------- memória do robô e preços do painel no Supabase (fora do repositório público) ---------- */
@@ -179,8 +179,8 @@ async function baixarMemoria() {
   for (const [nome, arq] of [["ultima", ULTIMA], ["historico", HIST], ["avisados", AVISADOS]]) if (m[nome]) writeFileSync(arq, JSON.stringify(m[nome]));
   log(`Memória: lida do Supabase (${Object.keys(m).join(", ") || "vazia"}).`);
 }
-async function guardarMemoria(painel) {
-  await memoria("POST", { painel, ultima: lerJson(ULTIMA, null), historico: lerJson(HIST, null), avisados: lerJson(AVISADOS, null) });
+async function guardarMemoria({ dados: painel, amostra }) {
+  await memoria("POST", { painel, amostra, ultima: lerJson(ULTIMA, null), historico: lerJson(HIST, null), avisados: lerJson(AVISADOS, null) });
   log("Painel: preços guardados no Supabase.");
 }
 
