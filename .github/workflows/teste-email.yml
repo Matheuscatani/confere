@@ -1,5 +1,5 @@
-# Rasante. · teste rápido do e-mail: manda uma mensagem de teste usando o segredo GMAIL_SENHA
-# (senha de app da conta que envia, rasante.gyn@gmail.com).
+# Rasante. · teste rápido do e-mail: manda um alerta de exemplo só para o e-mail do config (cfg.email.para),
+# pelo mesmo caminho dos alertas de verdade: Resend com o domínio rasantegyn.com.br (função enviar-alerta).
 # Roda sozinho quando este arquivo muda, ou pelo botão "Run workflow" na aba Actions.
 name: Teste do e-mail
 on:
@@ -13,23 +13,25 @@ jobs:
     timeout-minutes: 5
     env:
       TZ: America/Sao_Paulo
-      GMAIL_SENHA: ${{ secrets.GMAIL_SENHA }}
+      RASANTE_ROBO_TOKEN: ${{ secrets.RASANTE_ROBO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Nodemailer (envio do e-mail no padrão que o Gmail confere)
-        run: npm install --no-save --no-package-lock --no-audit --no-fund nodemailer@6.9.16
-      - name: Manda o e-mail de teste
+      - name: Manda o alerta de exemplo pelo Resend
         run: |
           node --input-type=module -e '
           import { readFileSync } from "node:fs";
-          import { enviarEmail } from "./passagens/robo/email.mjs";
+          import { alertaHtml } from "./passagens/robo/modelo-email.mjs";
           const cfg = JSON.parse(readFileSync("passagens/robo/config.json", "utf8"));
-          if (!process.env.GMAIL_SENHA) { console.log("::error::FALTA o segredo GMAIL_SENHA"); process.exit(1); }
-          const s = process.env.GMAIL_SENHA.replace(/\s+/g, "");
-          console.log("::notice::senha com " + s.length + " caracteres, so letras: " + /^[a-z]+$/i.test(s));
-          try { await enviarEmail({ de: cfg.email.de, para: cfg.email.para, assunto: "✈ Rasante.: teste do e-mail de alertas",
-            html: "<p>Se este e-mail chegou, os alertas de passagem do Rasante estão ligados. Enviado pela nuvem do GitHub em " + new Date().toLocaleString("pt-BR") + ".</p>" });
-          console.log("::notice::ENVIADO para " + cfg.email.para); } catch (e) { console.log("::error::" + String(e.message).replace(/\n/g, " ").slice(0, 400)); process.exit(1); }'
+          const n = (cidade, iata, preco, data, normal) => ({ d: { cidade, iata, normal, busca: iata, detalhe: { data, voo: { cia: "Azul", saida: "08:10" } } }, melhor: { data, preco, desconto: 1 - preco / normal }, outras: 0 });
+          const novos = [n("Ilhéus", "IOS", 366, "2027-02-14", 760), n("Jericoacoara", "JJD", 533, "2027-02-12", 1066)];
+          const linkVoo = (dest, data) => `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights to ${dest} from GYN on ${data} oneway`)}&curr=BRL&hl=pt-BR&gl=BR`;
+          const quando = new Date().toLocaleString("pt-BR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).replace(",", " às");
+          const html = alertaHtml({ origem: "Goiânia", novos, linkVoo, desconto: cfg.alertaDesconto, quando });
+          const r = await fetch(cfg.alertaUrl, { method: "POST", headers: { "x-robo-token": process.env.RASANTE_ROBO_TOKEN || "", "Content-Type": "application/json" },
+            body: JSON.stringify({ assunto: "✈ Teste do Rasante: Goiânia → Ilhéus por R$ 366 (52% abaixo do normal)", html, para: [cfg.email.para] }) });
+          const t = await r.text();
+          if (!r.ok) { console.log("::error::Resend: HTTP " + r.status + " " + t.slice(0, 300)); process.exit(1); }
+          console.log("::notice::ENVIADO pelo Resend para " + cfg.email.para + " · " + t);'
