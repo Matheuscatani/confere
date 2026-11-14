@@ -8,8 +8,10 @@
    node passagens/robo/voar.mjs --teste       só 3 destinos, sem publicar e sem e-mail
    node passagens/robo/voar.mjs --local      coleta tudo e escreve o voos.js local, sem publicar e sem e-mail
    node passagens/robo/voar.mjs --so SSA,REC  relê só esses destinos e reaproveita o resto da última coleta
-   node passagens/robo/voar.mjs --agendado    para agendar no Mac (hoje quem agenda é o GitHub, de hora em hora) */
-import { readFileSync, writeFileSync, existsSync, appendFileSync, rmSync } from "node:fs";
+   node passagens/robo/voar.mjs --agendado    para agendar no Mac (hoje quem agenda é o GitHub, a cada 30 minutos)
+   node passagens/robo/voar.mjs --parte 2/4   na nuvem: lê só 1/4 dos destinos e grava parte-2.json
+   node passagens/robo/voar.mjs --juntar dir  na nuvem: junta as partes, grava o painel e manda os alertas */
+import { readFileSync, writeFileSync, existsSync, appendFileSync, rmSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -245,7 +247,109 @@ async function clientesAtivos() {
   } catch (e) { log(`Clientes: não consegui ler a lista (${e.message}); o alerta vai só para ${cfg.email.para}`); return []; }
 }
 
+/* ---------- 6. Coleta de um grupo de destinos: calendário + duplo check na página do voo ---------- */
+const lerLista = () => cfg.destinos.map(([iata, cidade, uf, regiao, busca]) => ({ iata, cidade, uf, regiao, busca: busca || iata }));
+
+async function coletar(lista, anterior) {
+  const aba = await novaAba(), destinos = [], falharam = [];
+  let lidos = 0;
+  for (const d of lista) {
+    if ((SO && !SO.includes(d.iata)) || falharam.length >= 5) {
+      if (anterior[d.iata]) destinos.push({ ...d, dias: anterior[d.iata].dias });
+      if (!SO) falharam.push(d.iata);
+      continue;
+    }
+    try {
+      d.dias = await lerDestino(aba, d); destinos.push(d); lidos++;
+      log(`${d.cidade} (${d.iata}): ${d.dias.length} dias, de ${real(Math.min(...d.dias.map((x) => x[1])))}`);
+    } catch (e) {
+      falharam.push(d.iata); log(`${d.cidade} (${d.iata}): FALHOU (${e.message.slice(0, 100)})`);
+      /* destino que falhou hoje usa os preços da última coleta */
+      if (anterior[d.iata]) destinos.push({ ...d, dias: anterior[d.iata].dias });
+    }
+    await espera(1500 + Math.random() * 2000);
+  }
+
+  const hist = lerJson(HIST, {});
+
+  /* duplo check: abre a página do voo daquele dia. O preço que vale é SEMPRE o da página do voo.
+     Até 20% acima do calendário conta como "confere" (o calendário estava certo, só um pouco velho);
+     mais que isso, o calendário estava errado e os outros dias suspeitos parecidos também saem. */
+  const conferir = async (d, data) => {
+    try { await aba.ir(linkVoo(d.busca, data)); await espera(2500); return { data, ...(await aba.js(naPagina(detalhe))) }; }
+    catch (e) { log(`Conferência ${d.iata} ${data}: falhou (${e.message.slice(0, 80)})`); return null; }
+  };
+  const aplicar = (d, det, preco) => {
+    const real = det && det.voo && det.voo.preco;
+    if (!real) return "sem";
+    d.dias = d.dias.map(([x, p]) => [x, x === det.data ? real : p]);
+    if (real <= preco * 1.2) { (d.conferidos ||= new Set()).add(det.data); return "ok"; }
+    return "errado";
+  };
+  for (const d of destinos) {
+    const lista = suspeitos(d); if (!lista.length) continue;
+    let ok = 0, errados = 0, vistos = 0;
+    for (const [data, preco] of lista.slice(0, cfg.conferenciasPorDestino)) {
+      const det = await conferir(d, data), r = aplicar(d, det, preco); vistos++;
+      if (r === "ok") { ok++; if (!d.detalhe) d.detalhe = det; }
+      else if (r === "errado") { errados++; log(`${d.cidade} (${d.iata}): calendário dizia R$ ${preco} em ${data}, a página do voo diz R$ ${d.dias.find(([x]) => x === data)[1]}; corrigido`); }
+      else { if (det) { d.dias = d.dias.filter(([x]) => x !== data); log(`${d.cidade} (${d.iata}): nenhum voo na página para ${data}; preço do calendário descartado`); } break; }
+    }
+    /* o que não deu para conferir: se algum conferido estava errado, os parecidos também estão (fora); se todos conferiram, ficam */
+    const resto = lista.slice(vistos).map(([x]) => x);
+    if (errados || !ok) { d.dias = d.dias.filter(([x]) => !resto.includes(x)); if (resto.length) log(`${d.cidade} (${d.iata}): ${resto.length} preço(s) baixo(s) sem conferência descartados`); }
+    if (ok) log(`${d.cidade} (${d.iata}): ${ok} preço(s) muito baixo(s) conferido(s) na página do voo e mantido(s)`);
+  }
+  analisar(destinos, hist);
+
+  /* o menor preço de CADA destino (é o que aparece no painel e no e-mail) passa pelo duplo check na página do voo.
+     Se a página mostra outro preço, ele entra no lugar; se com isso o menor preço passa a ser outro dia, confere esse também. */
+  let corrigidos = 0;
+  for (const d of destinos.filter((x) => x.melhor)) {
+    for (let tentativa = 0; tentativa < 3 && d.melhor; tentativa++) {
+      const ja = d.conferidos && d.conferidos.has(d.melhor.data) && d.detalhe && d.detalhe.data === d.melhor.data;
+      const det = ja ? d.detalhe : await conferir(d, d.melhor.data);
+      if (!det) break;
+      const preco = d.melhor.preco, r = aplicar(d, det, preco);
+      if (r === "sem") { d.dias = d.dias.filter(([x]) => x !== det.data); log(`${d.cidade} (${d.iata}): nenhum voo na página para ${det.data}; dia descartado`); analisarUm(d, hist); continue; }
+      d.detalhe = det;
+      (d.conferidos ||= new Set()).add(det.data);
+      if (det.voo.preco !== preco) { corrigidos++; log(`${d.cidade} (${d.iata}): calendário dizia R$ ${preco} em ${det.data}, a página do voo diz R$ ${det.voo.preco}; corrigido`); }
+      analisarUm(d, hist);
+      if (d.melhor && d.melhor.data === det.data) break;
+    }
+  }
+  await aba.fechar();
+  const conferidos = destinos.filter((d) => d.melhor && d.conferidos && d.conferidos.has(d.melhor.data)).length;
+  log(`Duplo check: ${conferidos} de ${destinos.filter((d) => d.melhor).length} menores preços conferidos na página do voo (${corrigidos} corrigido(s)).`);
+  return { destinos, falharam, lidos };
+}
+
+/* ---------- 7. Fecha a coleta: preço normal, painel, memória e e-mail ---------- */
+async function finalizar(destinos, falharam, lidos, inicio) {
+  if (lidos < (TESTE ? 1 : 15)) throw new Error(`Só ${lidos} destinos lidos agora; o painel anterior foi mantido.`);
+  const hist = lerJson(HIST, {});
+  analisar(destinos, hist);
+  const resumo = { destinos: destinos.length, dias: destinos.reduce((s, d) => s + d.dias.length, 0), ofertas: destinos.reduce((s, d) => s + d.ofertas.length, 0), falharam };
+  const painel = escrever(destinos, resumo);
+  if (!TESTE) {
+    writeFileSync(HIST, JSON.stringify(hist));
+    writeFileSync(ULTIMA, JSON.stringify({ quando: new Date().toISOString(), destinos: destinos.map(({ iata, dias }) => ({ iata, dias })) }));
+  }
+  log(`Pronto: ${resumo.destinos} destinos, ${resumo.dias} dias com preço, ${resumo.ofertas} passagens muito abaixo do normal, em ${Math.round((Date.now() - inicio) / 60000)} min.` + (falharam.length ? ` Falharam: ${falharam.join(", ")}` : ""));
+  if (!LOCAL) {
+    await alertar(destinos);
+    try { await guardarMemoria(painel); }
+    catch (e) { log("ERRO: não guardei os preços no Supabase:", e.message); process.exitCode = 1; }
+  }
+}
+
 /* ---------- roda ---------- */
+/* Na nuvem a coleta é dividida: --parte 2/4 lê só um quarto dos destinos e grava parte-2.json;
+   --juntar <pasta> junta as partes, calcula o preço normal, grava o painel e manda o e-mail. */
+const PARTE = arg("--parte") ? process.argv[process.argv.indexOf("--parte") + 1].split("/").map(Number) : null;
+const JUNTAR = arg("--juntar") ? process.argv[process.argv.indexOf("--juntar") + 1] : null;
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   /* um robô de cada vez: dois rodando juntos um apaga a coleta do outro */
   const TRAVA = join(AQUI, "rodando.pid");
@@ -254,96 +358,46 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeFileSync(TRAVA, String(process.pid));
   process.on("exit", () => { try { if (readFileSync(TRAVA, "utf8") === String(process.pid)) rmSync(TRAVA); } catch {} });
   const inicio = Date.now();
-  log(TESTE ? "Início (teste)" : "Início da coleta");
+  log(TESTE ? "Início (teste)" : PARTE ? `Início da parte ${PARTE.join("/")}` : JUNTAR ? "Juntando as partes" : "Início da coleta");
   /* na nuvem cada coleta começa do zero: sem a memória (preço normal, avisos já mandados) não coleta, para não repetir e-mail */
   if (!LOCAL && (NA_NUVEM || process.env.RASANTE_ROBO_TOKEN)) {
     try { await baixarMemoria(); }
     catch (e) { log("ERRO: não consegui ler a memória no Supabase:", e.message); if (NA_NUVEM) console.log(`::error::Memória do Supabase: ${e.message}`); process.exit(1); }
   }
-  const abriu = await abrirChrome();
-  try {
-    const anterior = Object.fromEntries((lerJson(ULTIMA, {}).destinos || []).map((d) => [d.iata, d]));
-    const lista = (TESTE ? cfg.destinos.slice(0, 3) : cfg.destinos).map(([iata, cidade, uf, regiao, busca]) => ({ iata, cidade, uf, regiao, busca: busca || iata }));
-    const aba = await novaAba(), destinos = [], falharam = [];
-    for (const d of lista) {
-      if ((SO && !SO.includes(d.iata)) || falharam.length >= 5) {
-        if (anterior[d.iata]) destinos.push({ ...d, dias: anterior[d.iata].dias });
-        if (!SO) falharam.push(d.iata);
-        continue;
-      }
-      try {
-        d.dias = await lerDestino(aba, d); destinos.push(d);
-        log(`${d.cidade} (${d.iata}): ${d.dias.length} dias, de ${real(Math.min(...d.dias.map((x) => x[1])))}`);
-      } catch (e) {
-        falharam.push(d.iata); log(`${d.cidade} (${d.iata}): FALHOU (${e.message.slice(0, 100)})`);
-        /* destino que falhou hoje usa os preços da última coleta */
-        if (anterior[d.iata]) destinos.push({ ...d, dias: anterior[d.iata].dias });
-      }
-      await espera(1500 + Math.random() * 2000);
-    }
-    if (destinos.length < (TESTE ? 1 : 15)) throw new Error(`Só ${destinos.length} destinos lidos; o site anterior foi mantido.`);
+  const anterior = Object.fromEntries((lerJson(ULTIMA, {}).destinos || []).map((d) => [d.iata, d]));
 
-    const hist = lerJson(HIST, {});
-
-    /* duplo check: abre a página do voo e compara com o calendário.
-       Confere (até 20% de diferença): o preço fica, mesmo extraordinário. Não confere: vale o preço da página do voo. */
-    const conferir = async (d, data) => {
-      try { await aba.ir(linkVoo(d.busca, data)); await espera(2500); return { data, ...(await aba.js(naPagina(detalhe))) }; }
-      catch (e) { log(`Conferência ${d.iata} ${data}: falhou (${e.message.slice(0, 80)})`); return null; }
-    };
-    const aplicar = (d, det, preco) => {
-      const real = det && det.voo && det.voo.preco;
-      if (!real) return "sem";
-      if (real <= preco * 1.2) { (d.conferidos ||= new Set()).add(det.data); return "ok"; }
-      d.dias = d.dias.map(([x, p]) => [x, x === det.data ? real : p]);
-      return "errado";
-    };
-    for (const d of destinos) {
-      const lista = suspeitos(d); if (!lista.length) continue;
-      let ok = 0, errados = 0, vistos = 0;
-      for (const [data, preco] of lista.slice(0, cfg.conferenciasPorDestino)) {
-        const det = await conferir(d, data), r = aplicar(d, det, preco); vistos++;
-        if (r === "ok") { ok++; if (!d.detalhe) d.detalhe = det; }
-        else if (r === "errado") { errados++; log(`${d.cidade} (${d.iata}): calendário dizia R$ ${preco} em ${data}, a página do voo diz R$ ${d.dias.find(([x]) => x === data)[1]}; corrigido`); }
-        else { if (det) { d.dias = d.dias.filter(([x]) => x !== data); log(`${d.cidade} (${d.iata}): nenhum voo na página para ${data}; preço do calendário descartado`); } break; }
+  if (JUNTAR) {
+    /* sem Chrome: só junta. Destino de parte que não chegou fica com os preços da última coleta (sem o selo de conferido). */
+    try {
+      const partes = readdirSync(JUNTAR, { recursive: true }).filter((f) => /parte-\d+\.json$/.test(String(f))).map((f) => lerJson(join(JUNTAR, String(f)), null)).filter(Boolean);
+      const vindos = Object.fromEntries(partes.flatMap((p) => p.destinos).map((d) => [d.iata, d]));
+      const destinos = [], falharam = partes.flatMap((p) => p.falharam);
+      for (const d of lerLista()) {
+        const v = vindos[d.iata];
+        if (v) destinos.push({ ...v, conferidos: new Set(v.conferidos || []) });
+        else if (anterior[d.iata]) { destinos.push({ ...d, dias: anterior[d.iata].dias }); if (!falharam.includes(d.iata)) falharam.push(d.iata); }
       }
-      /* o que não deu para conferir: se algum conferido estava errado, os parecidos também estão (fora); se todos conferiram, ficam */
-      const resto = lista.slice(vistos).map(([x]) => x);
-      if (errados || !ok) { d.dias = d.dias.filter(([x]) => !resto.includes(x)); if (resto.length) log(`${d.cidade} (${d.iata}): ${resto.length} preço(s) baixo(s) sem conferência descartados`); }
-      if (ok) log(`${d.cidade} (${d.iata}): ${ok} preço(s) muito baixo(s) conferido(s) na página do voo e mantido(s)`);
+      log(`Partes recebidas: ${partes.map((p) => p.parte).join(", ") || "nenhuma"}.`);
+      await finalizar(destinos, falharam, partes.reduce((s, p) => s + p.lidos, 0), inicio);
+    } catch (e) { log("ERRO:", e.message); process.exitCode = 1; }
+  } else {
+    const abriu = await abrirChrome();
+    try {
+      let lista = lerLista();
+      if (TESTE) lista = lista.slice(0, 3);
+      if (PARTE) { const [n, total] = PARTE; lista = lista.filter((_, i) => i % total === n - 1); }
+      const { destinos, falharam, lidos } = await coletar(lista, anterior);
+      if (PARTE) {
+        if (!lidos) throw new Error("nenhum destino lido nesta parte");
+        const arq = join(AQUI, `parte-${PARTE[0]}.json`);
+        writeFileSync(arq, JSON.stringify({ parte: PARTE[0], lidos, falharam,
+          destinos: destinos.map(({ iata, cidade, uf, regiao, busca, dias, conferidos, detalhe }) => ({ iata, cidade, uf, regiao, busca, dias, conferidos: [...(conferidos || [])], detalhe: detalhe || null })) }));
+        log(`Parte ${PARTE.join("/")}: ${lidos} de ${lista.length} destinos lidos, em ${Math.round((Date.now() - inicio) / 60000)} min.`);
+      } else await finalizar(destinos, falharam, lidos, inicio);
+    } catch (e) {
+      log("ERRO:", e.message); process.exitCode = 1;
+    } finally {
+      if (abriu) await fecharChrome();
     }
-    analisar(destinos, hist);
-
-    /* os melhores do dia: companhia, horário, paradas, e o duplo check do preço que vai para o site e para o e-mail */
-    const top = destinos.filter((d) => d.melhor).sort((a, b) => b.desconto - a.desconto).slice(0, TESTE ? 3 : cfg.detalhes);
-    for (const d of top) {
-      for (let tentativa = 0; tentativa < 3 && d.melhor; tentativa++) {
-        const det = d.conferidos && d.conferidos.has(d.melhor.data) && d.detalhe && d.detalhe.data === d.melhor.data ? d.detalhe : await conferir(d, d.melhor.data);
-        if (!det) break;
-        d.detalhe = det;
-        const preco = d.melhor.preco, r = aplicar(d, det, preco);
-        if (r === "errado") log(`${d.cidade} (${d.iata}): calendário dizia R$ ${preco} em ${det.data}, a página do voo diz R$ ${det.voo.preco}; corrigido`);
-        analisarUm(d, hist);
-        if (r !== "errado") break;
-      }
-    }
-    await aba.fechar();
-
-    const resumo = { destinos: destinos.length, dias: destinos.reduce((s, d) => s + d.dias.length, 0), ofertas: destinos.reduce((s, d) => s + d.ofertas.length, 0), falharam };
-    const painel = escrever(destinos, resumo);
-    if (!TESTE) {
-      writeFileSync(HIST, JSON.stringify(hist));
-      writeFileSync(ULTIMA, JSON.stringify({ quando: new Date().toISOString(), destinos: destinos.map(({ iata, dias }) => ({ iata, dias })) }));
-    }
-    log(`Pronto: ${resumo.destinos} destinos, ${resumo.dias} dias com preço, ${resumo.ofertas} passagens muito abaixo do normal, em ${Math.round((Date.now() - inicio) / 60000)} min.` + (falharam.length ? ` Falharam: ${falharam.join(", ")}` : ""));
-    if (!LOCAL) {
-      await alertar(destinos);
-      try { await guardarMemoria(painel); }
-      catch (e) { log("ERRO: não guardei os preços no Supabase:", e.message); process.exitCode = 1; }
-    }
-  } catch (e) {
-    log("ERRO:", e.message); process.exitCode = 1;
-  } finally {
-    if (abriu) await fecharChrome();
   }
 }
