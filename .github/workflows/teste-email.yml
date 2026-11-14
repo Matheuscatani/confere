@@ -1,6 +1,6 @@
 # Rasante. · teste rápido do e-mail: manda um alerta de exemplo só para o e-mail do config (cfg.email.para),
 # pelo mesmo caminho dos alertas de verdade: Resend com o domínio rasantegyn.com.br (função enviar-alerta).
-# Roda sozinho quando este arquivo muda, ou pelo botão "Run workflow" na aba Actions.
+# Roda sozinho quando este arquivo muda, ou pelo botão "Run workflow" na aba Actions. (2º teste: chave nova do Resend)
 name: Teste do e-mail
 on:
   workflow_dispatch:
