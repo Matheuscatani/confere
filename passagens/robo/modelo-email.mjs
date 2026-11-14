@@ -42,6 +42,14 @@ export function alertaHtml({ origem, novos, linkVoo, desconto, quando }) {
     <tr><td style="padding:0 8px 10px;font-family:${F};font-size:38px;line-height:42px;font-weight:bold;color:#ffffff;letter-spacing:-1.5px">${titulo}</td></tr>
     <tr><td style="padding:0 8px 26px;font-family:${F};font-size:16px;line-height:23px;color:#d6e4f5">Preços de ${esc(quando)}. Passagem barata some rápido: se for viajar, garanta logo.</td></tr>
     ${novos.map((n) => card(origem, n, linkVoo(n.d.busca, n.melhor.data))).join("")}
+    <tr><td style="padding:12px 0 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:28px">
+      <tr><td style="padding:26px 28px 28px;font-family:${F};color:#10213a;text-align:center">
+        <div style="font-size:22px;line-height:28px;font-weight:bold;letter-spacing:-0.5px">Quer ver outras passagens?</div>
+        <div style="margin:8px 0 20px;font-size:16px;line-height:23px;color:#5b6b82">No seu painel estão os preços de hoje para os 43 destinos saindo de ${esc(origem)}, dia a dia.</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:#ff6b3d;border-radius:999px">
+          <a href="${SITE}painel.html" style="display:block;padding:17px 20px;font-family:${F};font-size:19px;font-weight:bold;color:#10213a;text-decoration:none;border-radius:999px">Ver todas as passagens</a>
+        </td></tr></table>
+      </td></tr></table></td></tr>
     <tr><td style="padding:22px 8px 0;font-family:${F};font-size:13px;line-height:20px;color:#b9d0ea">
       Só ida, 1 adulto, com taxas, menor preço do dia entre as companhias, no momento da coleta. Avisamos quando a passagem fica ${Math.round(desconto * 100)}% ou mais abaixo do preço normal da rota.<br>
       Você recebe este alerta porque assinou o Rasante. <a href="${SITE}painel.html" style="color:#ffffff">Abrir o painel</a> · Dúvidas? Responda este e-mail.

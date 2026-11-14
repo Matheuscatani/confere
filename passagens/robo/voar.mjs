@@ -186,23 +186,9 @@ async function guardarMemoria({ dados: painel, amostra }) {
 }
 
 /* ---------- 5. Alerta por e-mail: só o que ainda não foi avisado (ou que caiu mais 5%) ---------- */
-/* no máximo um e-mail por janela (config alertaHoras, hora de Goiânia): a janela manda de uma vez tudo o que juntou desde a anterior */
-function janelaAtual(agora = new Date()) {
-  const horas = [...(cfg.alertaHoras || [8, 13, 19])].sort((a, b) => a - b);
-  const h = horas.filter((x) => x <= agora.getHours()).pop();
-  const j = new Date(agora); j.setMinutes(0, 0, 0);
-  if (h === undefined) { j.setDate(j.getDate() - 1); j.setHours(horas[horas.length - 1]); } else j.setHours(h);
-  const prox = horas.find((x) => x > agora.getHours()) ?? horas[0];
-  return { inicio: j, proxima: `${prox}h` };
-}
-
+/* sai logo depois da coleta em que a passagem apareceu; a mesma passagem nunca é avisada duas vezes */
 async function alertar(destinos) {
   const avisados = lerJson(AVISADOS, {}), hoje = iso(new Date()), novos = [];
-  const janela = janelaAtual();
-  if (avisados._envio && new Date(avisados._envio) >= janela.inicio) {
-    log(`E-mail: o alerta das ${janela.inicio.getHours()}h já saiu; as ofertas novas vão juntas no das ${janela.proxima}.`);
-    return;
-  }
   for (const k of Object.keys(avisados)) if (k.split("|")[1] < hoje) delete avisados[k];
   for (const d of destinos) {
     const nova = d.ofertas.filter((o) => !avisados[d.iata + "|" + o.data] || o.preco <= avisados[d.iata + "|" + o.data] * 0.95);
