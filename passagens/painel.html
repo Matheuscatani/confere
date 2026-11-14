@@ -10,7 +10,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="estilo.css">
 </head>
-<body>
+<body class="trancado">
+
+<section class="entrada" id="entrada" aria-labelledby="entrada-titulo">
+  <div class="entrada-caixa">
+    <a class="logo" href="./" aria-label="Rasante, página inicial">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="var(--sun)"/><path d="M8 25c7-1 14-4 24-12l-2 7c-6 4-13 6-22 5Z" fill="#fff"/><path d="M15 21 11 13h4l7 6Z" fill="#fff"/></svg>
+      rasante
+    </a>
+    <h1 id="entrada-titulo">Entre no seu painel</h1>
+    <p class="entrada-sub" id="entrada-sub">Use o e-mail da compra. Mandamos um código de 6 números para confirmar que é você.</p>
+    <form id="form-email" novalidate>
+      <label class="entrada-campo"><span>Seu e-mail</span>
+        <input id="e-email" type="email" inputmode="email" autocomplete="email" required placeholder="voce@email.com">
+      </label>
+      <button class="btn btn-sun" type="submit">Receber código</button>
+    </form>
+    <form id="form-codigo" novalidate hidden>
+      <label class="entrada-campo"><span>Código de 6 números</span>
+        <input id="e-codigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="000000">
+      </label>
+      <button class="btn btn-sun" type="submit">Entrar</button>
+      <p class="entrada-links"><button type="button" id="e-reenviar">Mandar de novo</button> · <button type="button" id="e-trocar">Trocar e-mail</button></p>
+    </form>
+    <p class="entrada-msg" id="entrada-msg" role="status" aria-live="polite"></p>
+    <p class="entrada-pe">Ainda não assinou? <a href="./#planos">Ver os planos</a></p>
+  </div>
+</section>
 
 <header class="top">
   <div class="top-in">
@@ -20,6 +46,7 @@
     </a>
     <span class="saida"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z" fill="currentColor"/></svg><span class="longo">Saindo de&nbsp;</span><b id="origem">Goiânia</b></span>
     <a class="top-cta" href="#alertas">Alertas por e-mail</a>
+    <button class="top-sair" type="button" id="sair" title="">Sair</button>
   </div>
 </header>
 
@@ -128,7 +155,6 @@
   </div>
 </dialog>
 
-<script src="voos.js"></script>
-<script src="app.js"></script>
+<script src="acesso.js"></script>
 </body>
 </html>

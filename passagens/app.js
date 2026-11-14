@@ -1,4 +1,4 @@
-/* Rasante · monta a página a partir do voos.js (escrito pelo robô) */
+/* Rasante · monta o painel com os preços que o acesso.js trouxe do servidor (window.RASANTE) */
 (() => {
   const D = window.RASANTE;
   const $ = (s) => document.querySelector(s);

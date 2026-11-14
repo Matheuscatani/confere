@@ -9,3 +9,7 @@ passagens/robo/robo.log
 passagens/robo/agendado.log
 passagens/robo/rodando.pid
 node_modules/
+passagens/voos.js
+passagens/robo/ultima.json
+passagens/robo/historico.json
+passagens/robo/avisados.json

@@ -212,3 +212,29 @@ main { padding-top: 70px; }
   .dia span { font-size: .64rem; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before { transition: none !important; } html { scroll-behavior: auto; } }
+
+/* ---------- entrada: só quem assinou vê o painel ---------- */
+body.trancado > :not(.entrada):not(script):not(dialog) { display: none !important; }
+.entrada { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 32px var(--m); background: var(--sky); }
+.entrada[hidden] { display: none; }
+.entrada-caixa { width: 100%; max-width: 440px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(28px, 6vw, 44px); display: grid; gap: 18px; }
+.entrada-caixa .logo { margin-bottom: 6px; }
+.entrada h1 { font-size: clamp(1.7rem, 5vw, 2.1rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.entrada-sub { color: var(--muted); }
+.entrada form { display: grid; gap: 14px; }
+.entrada form[hidden] { display: none; }
+.entrada-campo { display: grid; gap: 6px; font-weight: 700; font-size: .9rem; }
+.entrada-campo input { min-height: 54px; padding: 0 16px; border: 2px solid var(--line); border-radius: 14px; background: var(--bg); font-size: 1.05rem; font-weight: 500; }
+.entrada-campo input:focus { outline: none; border-color: var(--sky-2); background: var(--card); }
+#e-codigo { font-size: 1.6rem; letter-spacing: .35em; font-weight: 800; text-align: center; }
+.entrada .btn { width: 100%; }
+.entrada .btn:disabled { opacity: .6; cursor: wait; }
+.entrada-links { text-align: center; color: var(--muted); font-size: .9rem; }
+.entrada-links button { background: none; border: 0; padding: 4px; color: var(--sky-2); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.entrada-msg { font-size: .95rem; min-height: 1.4em; }
+.entrada-msg:empty { display: none; }
+.entrada-msg.erro { color: #b3261e; }
+.entrada-msg a, .entrada-pe a { color: var(--sky-2); font-weight: 700; }
+.entrada-pe { padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .92rem; }
+.top-sair { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: .9rem; color: var(--muted); cursor: pointer; }
+.top-sair:hover { color: var(--ink); border-color: var(--muted); }

@@ -1,11 +1,12 @@
 /* Rasante. · o robô das passagens.
    Para cada destino, lê no Google Voos o preço mais barato de cada dia saindo de Goiânia
    (LATAM, GOL, Azul e as outras que voam a rota), compara com o preço normal da rota,
-   reescreve o voos.js, publica o site e manda e-mail quando aparece passagem muito abaixo do normal.
+   guarda os preços do painel no Supabase (só quem assinou vê), publica a amostra da página de vendas
+   e manda e-mail quando aparece passagem muito abaixo do normal.
 
    node passagens/robo/voar.mjs               coleta tudo, atualiza o site e manda os alertas
    node passagens/robo/voar.mjs --teste       só 3 destinos, sem publicar e sem e-mail
-   node passagens/robo/voar.mjs --local      coleta tudo e atualiza o voos.js, sem publicar e sem e-mail
+   node passagens/robo/voar.mjs --local      coleta tudo e escreve o voos.js local, sem publicar e sem e-mail
    node passagens/robo/voar.mjs --so SSA,REC  relê só esses destinos e reaproveita o resto da última coleta
    node passagens/robo/voar.mjs --agendado    para agendar no Mac (hoje quem agenda é o GitHub, de hora em hora) */
 import { readFileSync, writeFileSync, existsSync, appendFileSync, rmSync } from "node:fs";
@@ -143,7 +144,7 @@ function analisarUm(d, hist) {
 }
 const analisar = (destinos, hist) => { destinos.forEach((d) => analisarUm(d, hist)); return destinos; };
 
-/* ---------- 4. Escreve o voos.js ---------- */
+/* ---------- 4. Monta os dados do painel (voos.js fica só no computador, para conferir) e a amostra pública ---------- */
 function escrever(destinos, resumo) {
   const dados = {
     atualizado: new Date().toISOString(), origem: cfg.origem, alertaDesconto: cfg.alertaDesconto, resumo,
@@ -155,6 +156,31 @@ function escrever(destinos, resumo) {
   };
   const cab = `/*\n  Rasante. · passagens baratas saindo de ${cfg.origem.cidade}\n  ---------------------------------------------------------------\n  NÃO EDITE ESTE ARQUIVO: o robô reescreve ele de hora em hora.\n  As regras ficam em passagens/robo/config.json.\n\n  Última coleta: ${new Date().toLocaleString("pt-BR")}\n  ${resumo.destinos} destinos · ${resumo.dias} dias com preço · ${resumo.ofertas} passagens muito abaixo do normal\n*/\n\n`;
   writeFileSync(join(SITE, "voos.js"), cab + "window.RASANTE = " + JSON.stringify(dados, null, 1) + ";\n");
+  /* a página de vendas mostra só as 5 maiores ofertas (sem o calendário) e os nomes dos destinos */
+  const top = new Set(dados.destinos.filter((d) => d.melhor && d.desconto >= 0.2).slice(0, 5).map((d) => d.iata));
+  const amostra = { atualizado: dados.atualizado, origem: dados.origem, alertaDesconto: dados.alertaDesconto,
+    destinos: dados.destinos.map(({ dias, ...d }) => (top.has(d.iata) ? d : { iata: d.iata, cidade: d.cidade })) };
+  writeFileSync(join(SITE, "amostra.js"), `/* Rasante · amostra pública para a página de vendas (o robô reescreve de hora em hora). Os preços completos ficam no painel. */\nwindow.RASANTE = ${JSON.stringify(amostra)};\n`);
+  return dados;
+}
+
+/* ---------- memória do robô e preços do painel no Supabase (fora do repositório público) ---------- */
+const NA_NUVEM = !!process.env.GITHUB_ACTIONS;
+async function memoria(metodo, corpo) {
+  const token = process.env.RASANTE_ROBO_TOKEN;
+  if (!token || !cfg.memoriaUrl) throw new Error("falta o segredo RASANTE_ROBO_TOKEN");
+  const r = await fetch(cfg.memoriaUrl, { method: metodo, headers: { "x-robo-token": token, "Content-Type": "application/json" }, body: corpo ? JSON.stringify(corpo) : undefined, signal: AbortSignal.timeout(60000) });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+async function baixarMemoria() {
+  const m = await memoria("GET");
+  for (const [nome, arq] of [["ultima", ULTIMA], ["historico", HIST], ["avisados", AVISADOS]]) if (m[nome]) writeFileSync(arq, JSON.stringify(m[nome]));
+  log(`Memória: lida do Supabase (${Object.keys(m).join(", ") || "vazia"}).`);
+}
+async function guardarMemoria(painel) {
+  await memoria("POST", { painel, ultima: lerJson(ULTIMA, null), historico: lerJson(HIST, null), avisados: lerJson(AVISADOS, null) });
+  log("Painel: preços guardados no Supabase.");
 }
 
 /* ---------- 5. Alerta por e-mail: só o que ainda não foi avisado (ou que caiu mais 5%) ---------- */
@@ -184,8 +210,8 @@ async function alertar(destinos) {
     <p style="margin:0 0 12px;color:#555">Só ida, 1 adulto, menor preço do dia entre as companhias. Preço confere no momento da coleta (${new Date().toLocaleString("pt-BR")}); passagem barata some rápido.</p>
     <table style="width:100%;border-collapse:collapse">${linhas}</table>
     <p style="color:#777;font-size:12px;margin-top:16px">Rasante · você recebe este alerta porque assinou o Rasante. Avisamos quando a passagem fica ${Math.round(cfg.alertaDesconto * 100)}% ou mais abaixo do preço normal da rota, conferida na página do voo. Dúvidas: responda este e-mail.</p></div>`;
-  /* clientes que pagaram (lista no Supabase, alimentada pela Wiven): vão em cópia oculta, um não vê o outro */
-  const clientes = await clientesAtivos();
+  /* clientes que pagaram (lista no Supabase, alimentada pela Kiwify): vão em cópia oculta, um não vê o outro */
+  const clientes = (await clientesAtivos()).filter((e) => e !== cfg.email.para);
   const lotes = [];
   for (let i = 0; i < Math.max(clientes.length, 1); i += 90) lotes.push(clientes.slice(i, i + 90));
   let enviados = 0, saiu = false;
@@ -215,7 +241,8 @@ function publicar(msg) {
   if (!cfg.publicar || !existsSync(join(RAIZ, ".git"))) { log("Publicação: pulada."); return; }
   const git = (...a) => execFileSync("git", a, { cwd: RAIZ, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   /* o site e a memória do robô (preço normal, avisos já mandados): na nuvem, cada coleta começa do zero e lê daqui */
-  const arquivos = ["passagens/voos.js", ...[ULTIMA, HIST, AVISADOS].filter(existsSync).map((f) => "passagens/robo/" + f.split("/").pop())];
+  /* só a amostra da página de vendas: os preços completos e a memória ficam no Supabase */
+  const arquivos = ["passagens/amostra.js"];
   try {
     git("add", ...arquivos);
     if (!git("status", "--porcelain", ...arquivos).trim()) { log("Publicação: nada mudou."); return; }
@@ -237,6 +264,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   process.on("exit", () => { try { if (readFileSync(TRAVA, "utf8") === String(process.pid)) rmSync(TRAVA); } catch {} });
   const inicio = Date.now();
   log(TESTE ? "Início (teste)" : "Início da coleta");
+  /* na nuvem cada coleta começa do zero: sem a memória (preço normal, avisos já mandados) não coleta, para não repetir e-mail */
+  if (!LOCAL && (NA_NUVEM || process.env.RASANTE_ROBO_TOKEN)) {
+    try { await baixarMemoria(); }
+    catch (e) { log("ERRO: não consegui ler a memória no Supabase:", e.message); if (NA_NUVEM) console.log(`::error::Memória do Supabase: ${e.message}`); process.exit(1); }
+  }
   const abriu = await abrirChrome();
   try {
     const anterior = Object.fromEntries((lerJson(ULTIMA, {}).destinos || []).map((d) => [d.iata, d]));
@@ -307,13 +339,18 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     await aba.fechar();
 
     const resumo = { destinos: destinos.length, dias: destinos.reduce((s, d) => s + d.dias.length, 0), ofertas: destinos.reduce((s, d) => s + d.ofertas.length, 0), falharam };
-    escrever(destinos, resumo);
+    const painel = escrever(destinos, resumo);
     if (!TESTE) {
       writeFileSync(HIST, JSON.stringify(hist));
       writeFileSync(ULTIMA, JSON.stringify({ quando: new Date().toISOString(), destinos: destinos.map(({ iata, dias }) => ({ iata, dias })) }));
     }
     log(`Pronto: ${resumo.destinos} destinos, ${resumo.dias} dias com preço, ${resumo.ofertas} passagens muito abaixo do normal, em ${Math.round((Date.now() - inicio) / 60000)} min.` + (falharam.length ? ` Falharam: ${falharam.join(", ")}` : ""));
-    if (!LOCAL) { await alertar(destinos); publicar(`Passagens de ${new Date().toLocaleString("pt-BR")}: ${resumo.ofertas} abaixo do normal em ${resumo.destinos} destinos`); }
+    if (!LOCAL) {
+      await alertar(destinos);
+      try { await guardarMemoria(painel); }
+      catch (e) { log("ERRO: não guardei os preços no Supabase:", e.message); process.exitCode = 1; }
+      publicar(`Passagens de ${new Date().toLocaleString("pt-BR")}: ${resumo.ofertas} abaixo do normal em ${resumo.destinos} destinos`);
+    }
   } catch (e) {
     log("ERRO:", e.message); process.exitCode = 1;
   } finally {

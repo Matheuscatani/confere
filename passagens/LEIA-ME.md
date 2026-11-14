@@ -45,7 +45,9 @@ O que o robô fez fica anotado em `robo/robo.log`.
 
 ## Arquivos
 
-- `index.html`, `estilo.css`, `app.js`: o site. `voos.js`: os preços, escritos pelo robô.
+- `index.html`, `vendas.css`, `vendas.js`: a página de vendas (pública). `amostra.js`: as 5 maiores ofertas da última coleta, para o e-mail de exemplo; o robô reescreve de hora em hora.
+- `painel.html`, `estilo.css`, `app.js`, `acesso.js`: o painel de preços, **só para quem assinou**. Os preços não ficam no site nem no repositório: vêm do Supabase depois da entrada.
+- `voos.js`: cópia local dos preços para conferir no computador (não vai para o GitHub).
 - `robo/voar.mjs`: o robô. `robo/email.mjs`: envia os alertas. Usa o mesmo Chrome do robô do Confere. (`../robo/chrome.mjs`).
 - `../.github/workflows/passagens.yml`: o agendamento de hora em hora na nuvem do GitHub.
 
@@ -57,4 +59,12 @@ O que o robô fez fica anotado em `robo/robo.log`.
 - A cada coleta, o robô pede a lista de clientes ativos em `servidor/clientes-ativos/` e manda o alerta a todos em cópia oculta, em lotes de 90.
 - Segredos no GitHub: `GMAIL_SENHA` (senha de app de rasante.gyn@gmail.com) e `RASANTE_ROBO_TOKEN`. No Supabase, tabela `segredos`: `kiwify_token` (o token do webhook na Kiwify) e `robo_token`.
 - `servidor/wiven-webhook/` é da tentativa com a Wiven e não é usado.
+
+## Acesso ao painel (um acesso para cada cliente)
+
+1. A pessoa paga na Kiwify. O `kiwify-webhook` põe o e-mail dela na lista de clientes e manda o e-mail "Seu acesso ao Rasante está liberado" com o link do painel.
+2. No `painel.html` ela digita o e-mail da compra. O serviço `servidor/acesso/` confere se a assinatura está ativa e manda um código de 6 números (vale 15 minutos, 5 tentativas).
+3. Com o código certo, o aparelho dela recebe uma chave de acesso que vale 60 dias. Com ela o painel busca os preços. Assinatura vencida, reembolsada ou estornada perde o acesso na hora.
+4. O robô guarda os preços do painel e a memória dele (preço normal, avisos já mandados) no Supabase pelo serviço `servidor/robo/`, com o segredo `RASANTE_ROBO_TOKEN`. Sem esse segredo a coleta na nuvem para com erro, para não repetir alertas.
+- Os e-mails de código e de boas-vindas saem do Gmail rasante.gyn@gmail.com: precisam do segredo `GMAIL_SENHA` também nas Edge Functions do Supabase (Project Settings → Edge Functions → Secrets).
 - O Gmail comum aceita cerca de 500 destinatários por dia. Com muitos clientes, troque o envio por um serviço de e-mail (Brevo, Resend).

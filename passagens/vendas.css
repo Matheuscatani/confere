@@ -282,7 +282,7 @@ img { display: block; max-width: 100%; }
   .rodape-pe { flex-direction: column; font-size: 13px; }
 }
 @media (max-width: 520px) {
-  .nav nav a:not(:last-child) { display: none; }
+  .nav nav a:nth-child(-n+2) { display: none; }
   .email { width: 340px; }
 }
 @media (max-width: 520px) {
