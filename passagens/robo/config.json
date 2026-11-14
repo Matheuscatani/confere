@@ -11,6 +11,8 @@
   "memoriaUrl": "https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/robo",
 
   "_regras": "alertaDesconto: quanto abaixo do preço normal da rota a passagem precisa estar para virar alerta (0.35 = 35%). economiaMinima: em reais. diasMinimos: ignora voos muito em cima da hora. meses: quantos meses à frente o robô olha.",
+  "_alertaHoras": "Horas do dia (de Goiânia) em que sai o e-mail de alerta: no máximo um por janela, juntando todas as ofertas novas desde a anterior. Protege o cliente de excesso de e-mail e o limite de cerca de 500 destinatários por dia do Gmail.",
+  "alertaHoras": [8, 13, 19],
   "alertaDesconto": 0.35,
   "economiaMinima": 150,
   "diasMinimos": 3,

@@ -185,8 +185,23 @@ async function guardarMemoria(painel) {
 }
 
 /* ---------- 5. Alerta por e-mail: só o que ainda não foi avisado (ou que caiu mais 5%) ---------- */
+/* no máximo um e-mail por janela (config alertaHoras, hora de Goiânia): a janela manda de uma vez tudo o que juntou desde a anterior */
+function janelaAtual(agora = new Date()) {
+  const horas = [...(cfg.alertaHoras || [8, 13, 19])].sort((a, b) => a - b);
+  const h = horas.filter((x) => x <= agora.getHours()).pop();
+  const j = new Date(agora); j.setMinutes(0, 0, 0);
+  if (h === undefined) { j.setDate(j.getDate() - 1); j.setHours(horas[horas.length - 1]); } else j.setHours(h);
+  const prox = horas.find((x) => x > agora.getHours()) ?? horas[0];
+  return { inicio: j, proxima: `${prox}h` };
+}
+
 async function alertar(destinos) {
   const avisados = lerJson(AVISADOS, {}), hoje = iso(new Date()), novos = [];
+  const janela = janelaAtual();
+  if (avisados._envio && new Date(avisados._envio) >= janela.inicio) {
+    log(`E-mail: o alerta das ${janela.inicio.getHours()}h já saiu; as ofertas novas vão juntas no das ${janela.proxima}.`);
+    return;
+  }
   for (const k of Object.keys(avisados)) if (k.split("|")[1] < hoje) delete avisados[k];
   for (const d of destinos) {
     const nova = d.ofertas.filter((o) => !avisados[d.iata + "|" + o.data] || o.preco <= avisados[d.iata + "|" + o.data] * 0.95);
@@ -215,6 +230,7 @@ async function alertar(destinos) {
   }
   /* só marca como avisado o que saiu de verdade; se falhou, tenta de novo na próxima hora */
   if (saiu) {
+    avisados._envio = new Date().toISOString();
     writeFileSync(AVISADOS, JSON.stringify(avisados, null, 1));
     log(`E-mail: enviado com ${novos.length} destino(s) para ${cfg.email.para} e ${enviados} cliente(s).`);
   }

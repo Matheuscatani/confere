@@ -71,4 +71,5 @@ O que o robô fez fica anotado em `robo/robo.log`.
 - Senhas ficam só como resumo PBKDF2 (com sal) na tabela `clientes`; links e chaves de acesso, só como resumo SHA-256.
 - Os e-mails da conta (`servidor/_shared/email.ts`) e o alerta de passagens (`robo/modelo-email.mjs`) têm o mesmo visual: fundo azul, logo, título grande e card branco. Imagens em `email/`.
 - Os e-mails da conta saem do Gmail rasante.gyn@gmail.com: precisam do segredo `GMAIL_SENHA` também nas Edge Functions do Supabase (Project Settings → Edge Functions → Secrets).
-- O Gmail comum aceita cerca de 500 destinatários por dia. Com muitos clientes, troque o envio por um serviço de e-mail (Brevo, Resend).
+- O alerta por e-mail sai no máximo 3 vezes por dia, às 8h, 13h e 19h (`alertaHoras` no config.json), juntando as ofertas novas desde o anterior. O painel continua atualizando de hora em hora.
+- O Gmail comum aceita cerca de 500 destinatários por dia (com 3 alertas por dia, uns 150 clientes). Com muitos clientes, troque o envio por um serviço de e-mail (Brevo, Resend).
