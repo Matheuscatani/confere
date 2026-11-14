@@ -1,7 +1,7 @@
 /* Rasante. · o robô das passagens.
    Para cada destino, lê no Google Voos o preço mais barato de cada dia saindo de Goiânia
    (LATAM, GOL, Azul e as outras que voam a rota), compara com o preço normal da rota,
-   guarda os preços do painel no Supabase (só quem assinou vê), publica a amostra da página de vendas
+   guarda os preços do painel e a amostra da página de vendas no Supabase (o site fica em rasantegyn.com.br)
    e manda e-mail quando aparece passagem muito abaixo do normal.
 
    node passagens/robo/voar.mjs               coleta tudo, atualiza o site e manda os alertas
@@ -161,7 +161,6 @@ function escrever(destinos, resumo) {
   const top = new Set(dados.destinos.filter((d) => d.melhor && d.desconto >= 0.2).slice(0, 5).map((d) => d.iata));
   const amostra = { atualizado: dados.atualizado, origem: dados.origem, alertaDesconto: dados.alertaDesconto,
     destinos: dados.destinos.map(({ dias, ...d }) => (top.has(d.iata) ? d : { iata: d.iata, cidade: d.cidade })) };
-  writeFileSync(join(SITE, "amostra.js"), `/* Rasante · amostra pública para a página de vendas (o robô reescreve de hora em hora). Os preços completos ficam no painel. */\nwindow.RASANTE = ${JSON.stringify(amostra)};\n`);
   return { dados, amostra };
 }
 
@@ -244,24 +243,6 @@ async function clientesAtivos() {
     if (!r.ok) throw new Error("HTTP " + r.status);
     return (await r.json()).emails || [];
   } catch (e) { log(`Clientes: não consegui ler a lista (${e.message}); o alerta vai só para ${cfg.email.para}`); return []; }
-}
-
-/* ---------- 6. Publica (GitHub Pages, o mesmo repositório do Confere.) ---------- */
-function publicar(msg) {
-  if (!cfg.publicar || !existsSync(join(RAIZ, ".git"))) { log("Publicação: pulada."); return; }
-  const git = (...a) => execFileSync("git", a, { cwd: RAIZ, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-  /* o site e a memória do robô (preço normal, avisos já mandados): na nuvem, cada coleta começa do zero e lê daqui */
-  /* só a amostra da página de vendas: os preços completos e a memória ficam no Supabase */
-  const arquivos = ["passagens/amostra.js"];
-  try {
-    git("add", ...arquivos);
-    if (!git("status", "--porcelain", ...arquivos).trim()) { log("Publicação: nada mudou."); return; }
-    git("commit", "-m", msg, "--", ...arquivos);
-    /* o robô do Confere. também publica no mesmo repositório: junta antes de enviar */
-    git("pull", "--rebase", "--autostash");
-    git("push");
-    log("Publicação: site atualizado no GitHub.");
-  } catch (e) { log("Publicação: FALHOU ·", (e.stderr || e.message).toString().slice(0, 300)); }
 }
 
 /* ---------- roda ---------- */
@@ -359,7 +340,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       await alertar(destinos);
       try { await guardarMemoria(painel); }
       catch (e) { log("ERRO: não guardei os preços no Supabase:", e.message); process.exitCode = 1; }
-      publicar(`Passagens de ${new Date().toLocaleString("pt-BR")}: ${resumo.ofertas} abaixo do normal em ${resumo.destinos} destinos`);
     }
   } catch (e) {
     log("ERRO:", e.message); process.exitCode = 1;

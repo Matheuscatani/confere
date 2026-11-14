@@ -3,7 +3,7 @@
 import nodemailer from "npm:nodemailer@6.9.16";
 
 export const REMETENTE = "rasante.gyn@gmail.com";
-export const SITE = "https://matheuscatani.github.io/confere/passagens/";
+export const SITE = "https://rasantegyn.com.br/";
 export const PAINEL = SITE + "painel.html";
 const CAPA = SITE + "email/capa.jpg";
 

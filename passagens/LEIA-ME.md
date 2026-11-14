@@ -45,10 +45,11 @@ O que o robô fez fica anotado em `robo/robo.log`.
 
 ## Arquivos
 
-- `index.html`, `vendas.css`, `vendas.js`: a página de vendas (pública). `amostra.js`: as 5 maiores ofertas da última coleta, para o e-mail de exemplo; o robô reescreve de hora em hora.
-- `painel.html`, `estilo.css`, `app.js`, `acesso.js`: o painel de preços, **só para quem assinou**. Os preços não ficam no site nem no repositório: vêm do Supabase depois da entrada.
-- `voos.js`: cópia local dos preços para conferir no computador (não vai para o GitHub).
-- `robo/voar.mjs`: o robô. `robo/email.mjs`: envia os alertas. Usa o mesmo Chrome do robô do Confere. (`../robo/chrome.mjs`).
+- **O site fica em https://rasantegyn.com.br**, no repositório `Matheuscatani/rasante` (página de vendas `index.html`, painel `painel.html`, `app.js`, `acesso.js`, estilos, fotos e imagens dos e-mails). Aqui no computador ele fica em `rasante-site/` (fora deste repositório): edite lá e envie com `git push`.
+- Domínio no registro.br (zona DNS no modo avançado: 4 registros A para o GitHub Pages e `www` CNAME para matheuscatani.github.io), com https ligado no GitHub.
+- `index.html` e `painel.html` desta pasta só levam ao endereço novo (os links antigos continuam funcionando). `fotos/` e `email/` ficam aqui para os e-mails já enviados.
+- `robo/voar.mjs`: o robô. Guarda os preços do painel e a amostra da página de vendas no Supabase. `robo/email.mjs` envia os alertas e `robo/modelo-email.mjs` monta o visual deles.
+- `servidor/`: os serviços do Supabase (acesso, amostra, robo, kiwify-webhook, clientes-ativos).
 - `../.github/workflows/passagens.yml`: o agendamento de hora em hora na nuvem do GitHub.
 
 ## Vendas (Kiwify) e lista de clientes (Supabase)

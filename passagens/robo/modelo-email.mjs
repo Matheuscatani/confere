@@ -1,7 +1,7 @@
 /* Rasante. · o visual do e-mail de alerta: fundo azul, logo, título grande e um card branco por destino
    (foto da cidade, "Goiânia → Ilhéus por R$ 366", data e companhia, selo laranja, botão "Ver o voo").
    Mesmo visual dos e-mails da conta (passagens/servidor/_shared/email.ts). Tabelas e estilo na tag: é o que os e-mails mostram igual. */
-const SITE = "https://matheuscatani.github.io/confere/passagens/";
+const SITE = "https://rasantegyn.com.br/";
 const F = "Arial,Helvetica,sans-serif";
 const real = (n) => "R$ " + Math.round(n).toLocaleString("pt-BR");
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
