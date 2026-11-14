@@ -60,11 +60,15 @@ O que o robô fez fica anotado em `robo/robo.log`.
 - Segredos no GitHub: `GMAIL_SENHA` (senha de app de rasante.gyn@gmail.com) e `RASANTE_ROBO_TOKEN`. No Supabase, tabela `segredos`: `kiwify_token` (o token do webhook na Kiwify) e `robo_token`.
 - `servidor/wiven-webhook/` é da tentativa com a Wiven e não é usado.
 
-## Acesso ao painel (um acesso para cada cliente)
+## Acesso ao painel (um acesso para cada cliente, com senha)
 
-1. A pessoa paga na Kiwify. O `kiwify-webhook` põe o e-mail dela na lista de clientes e manda o e-mail "Seu acesso ao Rasante está liberado" com o link do painel.
-2. No `painel.html` ela digita o e-mail da compra. O serviço `servidor/acesso/` confere se a assinatura está ativa e manda um código de 6 números (vale 15 minutos, 5 tentativas).
-3. Com o código certo, o aparelho dela recebe uma chave de acesso que vale 60 dias. Com ela o painel busca os preços. Assinatura vencida, reembolsada ou estornada perde o acesso na hora.
-4. O robô guarda os preços do painel e a memória dele (preço normal, avisos já mandados) no Supabase pelo serviço `servidor/robo/`, com o segredo `RASANTE_ROBO_TOKEN`. Sem esse segredo a coleta na nuvem para com erro, para não repetir alertas.
-- Os e-mails de código e de boas-vindas saem do Gmail rasante.gyn@gmail.com: precisam do segredo `GMAIL_SENHA` também nas Edge Functions do Supabase (Project Settings → Edge Functions → Secrets).
+1. A pessoa paga na Kiwify. O `kiwify-webhook` põe o e-mail dela na lista de clientes e manda o e-mail de boas-vindas com o botão **Criar minha senha** (link de uso único, vale 7 dias).
+2. O link abre `painel.html#senha=...`: ela escolhe a senha (8 caracteres ou mais) e já entra.
+3. Depois, entra com e-mail e senha. "Esqueci minha senha" e "Primeiro acesso" mandam um link novo (vale 1 hora para trocar, 7 dias para criar). Depois de 8 senhas erradas, a conta espera 15 minutos.
+4. "Minha conta", no topo do painel, mostra o plano e a validade, troca a senha e sai. Trocar a senha desconecta os outros aparelhos.
+5. A chave de acesso fica no aparelho por 60 dias. Assinatura vencida, reembolsada ou estornada perde o acesso na hora.
+6. O robô guarda os preços do painel e a memória dele (preço normal, avisos já mandados) no Supabase pelo serviço `servidor/robo/`, com o segredo `RASANTE_ROBO_TOKEN`. Sem esse segredo a coleta na nuvem para com erro, para não repetir alertas.
+- Senhas ficam só como resumo PBKDF2 (com sal) na tabela `clientes`; links e chaves de acesso, só como resumo SHA-256.
+- Os e-mails da conta (`servidor/_shared/email.ts`) e o alerta de passagens (`robo/modelo-email.mjs`) têm o mesmo visual: fundo azul, logo, título grande e card branco. Imagens em `email/`.
+- Os e-mails da conta saem do Gmail rasante.gyn@gmail.com: precisam do segredo `GMAIL_SENHA` também nas Edge Functions do Supabase (Project Settings → Edge Functions → Secrets).
 - O Gmail comum aceita cerca de 500 destinatários por dia. Com muitos clientes, troque o envio por um serviço de e-mail (Brevo, Resend).

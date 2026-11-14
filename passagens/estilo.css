@@ -236,5 +236,38 @@ body.trancado > :not(.entrada):not(script):not(dialog) { display: none !importan
 .entrada-msg.erro { color: #b3261e; }
 .entrada-msg a, .entrada-pe a { color: var(--sky-2); font-weight: 700; }
 .entrada-pe { padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .92rem; }
-.top-sair { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: .9rem; color: var(--muted); cursor: pointer; }
+.top-sair { display: inline-flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; background: none; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: .9rem; color: var(--sky); cursor: pointer; }
+.top-sair svg { width: 18px; height: 18px; }
+@media (max-width: 520px) { .top-sair { padding: 0; width: 40px; height: 40px; justify-content: center; } .top-sair span { display: none; } }
 .top-sair:hover { color: var(--ink); border-color: var(--muted); }
+.entrada-msg.ok { color: var(--green); }
+.entrada [hidden], .conta [hidden] { display: none !important; }
+.senha-caixa { position: relative; display: block; }
+.senha-caixa input { width: 100%; padding-right: 96px; }
+.ver { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: 0; padding: 8px 10px; font-weight: 700; font-size: .85rem; color: var(--sky-2); cursor: pointer; }
+.entrada-campo input { width: 100%; }
+.dica { color: var(--muted); font-size: .88rem; margin-top: -4px; }
+
+/* ---------- minha conta ---------- */
+.conta { width: min(460px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: clamp(24px, 5vw, 34px); border: 0; border-radius: calc(var(--radius) + 4px); box-shadow: 0 30px 80px rgba(8, 25, 50, .35); overflow: auto; color: var(--ink); }
+.conta::backdrop { background: rgba(8, 25, 50, .55); backdrop-filter: blur(3px); }
+.conta h2 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px; }
+.conta h3 { font-size: 1.1rem; font-weight: 800; }
+.conta-quem { margin-bottom: 14px; }
+.conta-nome { font-weight: 700; font-size: 1.1rem; }
+.conta-email { color: var(--muted); word-break: break-all; }
+.conta-plano { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 16px; border-radius: 14px; background: var(--sky-soft); color: var(--sky); font-weight: 600; }
+.conta-selo { background: var(--sun); color: var(--ink); font-weight: 800; padding: 6px 12px; }
+.conta-selo:empty { display: none; }
+.conta form { display: grid; gap: 14px; margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line); }
+.conta .btn { width: 100%; }
+.conta-sair { display: block; width: 100%; margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 999px; background: none; font-weight: 700; color: #b3261e; cursor: pointer; }
+.conta-sair:hover { background: var(--red-soft); }
+/* topo no celular: logo, saída com a hora e a conta cabem em 360 px */
+@media (max-width: 520px) {
+  .top-in { gap: 8px; padding-left: 14px; padding-right: 14px; }
+  .logo { font-size: 1.2rem; gap: 7px; }
+  .logo svg { width: 30px; height: 30px; }
+  .saida { padding: 7px 10px; font-size: .8rem; gap: 4px; min-width: 0; }
+  .saida svg { width: 13px; height: 13px; }
+}

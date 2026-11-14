@@ -15,6 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { abrirChrome, fecharChrome, novaAba, espera } from "../../robo/chrome.mjs";
 import { enviarEmail } from "./email.mjs";
+import { alertaHtml } from "./modelo-email.mjs";
 
 const AQUI = dirname(fileURLToPath(import.meta.url)), SITE = join(AQUI, ".."), RAIZ = join(SITE, "..");
 const arg = (a) => process.argv.includes(a);
@@ -201,15 +202,8 @@ async function alertar(destinos) {
   novos.sort((a, b) => b.melhor.desconto - a.melhor.desconto);
   const p = novos[0];
   const assunto = `✈ ${cfg.origem.cidade} → ${p.d.cidade} por ${real(p.melhor.preco)} (${Math.round(p.melhor.desconto * 100)}% abaixo do normal)` + (novos.length > 1 ? ` + ${novos.length - 1} destino(s)` : "");
-  const linhas = novos.map(({ d, melhor, outras }) => {
-    const det = d.detalhe && d.detalhe.data === melhor.data && d.detalhe.voo ? `<br><span style="color:#555">${d.detalhe.voo.cia} · ${d.detalhe.voo.saida}–${d.detalhe.voo.chegada} · ${d.detalhe.voo.paradas}</span>` : "";
-    return `<tr><td style="padding:14px 0;border-bottom:1px solid #ddd"><b style="font-size:17px">${d.cidade} (${d.iata})</b><br>${dataBr(melhor.data)}${outras ? ` · e mais ${outras} data(s) barata(s)` : ""}${det}</td>
-      <td style="padding:14px 0;border-bottom:1px solid #ddd;text-align:right;white-space:nowrap"><b style="font-size:20px">${real(melhor.preco)}</b><br><span style="color:#b3261e">${Math.round(melhor.desconto * 100)}% abaixo</span> · normal ${real(d.normal)}<br><a href="${linkVoo(d.busca, melhor.data)}">Ver o voo</a></td></tr>`;
-  }).join("");
-  const html = `<div style="font-family:Arial,sans-serif;max-width:620px;color:#111"><h2 style="margin:0 0 4px">Passagens muito abaixo do preço saindo de ${cfg.origem.cidade}</h2>
-    <p style="margin:0 0 12px;color:#555">Só ida, 1 adulto, menor preço do dia entre as companhias. Preço confere no momento da coleta (${new Date().toLocaleString("pt-BR")}); passagem barata some rápido.</p>
-    <table style="width:100%;border-collapse:collapse">${linhas}</table>
-    <p style="color:#777;font-size:12px;margin-top:16px">Rasante · você recebe este alerta porque assinou o Rasante. Avisamos quando a passagem fica ${Math.round(cfg.alertaDesconto * 100)}% ou mais abaixo do preço normal da rota, conferida na página do voo. Dúvidas: responda este e-mail.</p></div>`;
+  const quando = new Date().toLocaleString("pt-BR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).replace(",", " às");
+  const html = alertaHtml({ origem: cfg.origem.cidade, novos, linkVoo, desconto: cfg.alertaDesconto, quando });
   /* clientes que pagaram (lista no Supabase, alimentada pela Kiwify): vão em cópia oculta, um não vê o outro */
   const clientes = (await clientesAtivos()).filter((e) => e !== cfg.email.para);
   const lotes = [];

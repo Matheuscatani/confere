@@ -19,22 +19,41 @@
       rasante
     </a>
     <h1 id="entrada-titulo">Entre no seu painel</h1>
-    <p class="entrada-sub" id="entrada-sub">Use o e-mail da compra. Mandamos um código de 6 números para confirmar que é você.</p>
-    <form id="form-email" novalidate>
-      <label class="entrada-campo"><span>Seu e-mail</span>
-        <input id="e-email" type="email" inputmode="email" autocomplete="email" required placeholder="voce@email.com">
+    <p class="entrada-sub" id="entrada-sub">Use o e-mail da compra e a sua senha.</p>
+
+    <form id="form-login" class="tela" novalidate>
+      <label class="entrada-campo"><span>E-mail</span>
+        <input id="l-email" type="email" inputmode="email" autocomplete="username" required placeholder="voce@email.com">
       </label>
-      <button class="btn btn-sun" type="submit">Receber código</button>
-    </form>
-    <form id="form-codigo" novalidate hidden>
-      <label class="entrada-campo"><span>Código de 6 números</span>
-        <input id="e-codigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="000000">
+      <label class="entrada-campo"><span>Senha</span>
+        <span class="senha-caixa"><input id="l-senha" type="password" autocomplete="current-password" required><button type="button" class="ver" aria-label="Mostrar senha">Mostrar</button></span>
       </label>
       <button class="btn btn-sun" type="submit">Entrar</button>
-      <p class="entrada-links"><button type="button" id="e-reenviar">Mandar de novo</button> · <button type="button" id="e-trocar">Trocar e-mail</button></p>
+      <p class="entrada-links"><button type="button" data-ir="esqueci">Esqueci minha senha</button> · <button type="button" data-ir="esqueci" data-primeiro>Primeiro acesso</button></p>
     </form>
+
+    <form id="form-esqueci" class="tela" novalidate hidden>
+      <label class="entrada-campo"><span>E-mail da compra</span>
+        <input id="q-email" type="email" inputmode="email" autocomplete="email" required placeholder="voce@email.com">
+      </label>
+      <button class="btn btn-sun" type="submit">Mandar o link</button>
+      <p class="entrada-links"><button type="button" data-ir="login">Voltar para entrar</button></p>
+    </form>
+
+    <form id="form-senha" class="tela" novalidate hidden>
+      <input type="email" id="s-email" autocomplete="username" hidden>
+      <label class="entrada-campo"><span>Nova senha</span>
+        <span class="senha-caixa"><input id="s-senha" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="ver" aria-label="Mostrar senha">Mostrar</button></span>
+      </label>
+      <label class="entrada-campo"><span>Repita a senha</span>
+        <input id="s-senha2" type="password" autocomplete="new-password" minlength="8" required>
+      </label>
+      <p class="dica">Pelo menos 8 caracteres.</p>
+      <button class="btn btn-sun" type="submit">Salvar senha e entrar</button>
+    </form>
+
     <p class="entrada-msg" id="entrada-msg" role="status" aria-live="polite"></p>
-    <p class="entrada-pe">Ainda não assinou? <a href="./#planos">Ver os planos</a></p>
+    <p class="entrada-pe" id="entrada-pe">Ainda não assinou? <a href="./#planos">Ver os planos</a></p>
   </div>
 </section>
 
@@ -46,7 +65,7 @@
     </a>
     <span class="saida"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z" fill="currentColor"/></svg><span class="longo">Saindo de&nbsp;</span><b id="origem">Goiânia</b></span>
     <a class="top-cta" href="#alertas">Alertas por e-mail</a>
-    <button class="top-sair" type="button" id="sair" title="">Sair</button>
+    <button class="top-sair" type="button" id="abrir-conta" aria-label="Minha conta"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>Minha conta</span></button>
   </div>
 </header>
 
@@ -153,6 +172,35 @@
     <div class="grade" id="cal-grade"></div>
     <p class="cal-nota">Toque num dia para abrir o voo e ver as companhias.</p>
   </div>
+</dialog>
+
+<dialog class="conta" id="conta" aria-labelledby="conta-titulo">
+  <button class="fechar" type="button" id="conta-fechar" aria-label="Fechar">×</button>
+  <h2 id="conta-titulo">Minha conta</h2>
+  <div class="conta-quem">
+    <p class="conta-nome" id="conta-nome"></p>
+    <p class="conta-email" id="conta-email"></p>
+  </div>
+  <div class="conta-plano">
+    <span class="conta-selo" id="conta-plano"></span>
+    <span id="conta-validade"></span>
+  </div>
+  <form id="form-trocar" novalidate>
+    <h3>Trocar senha</h3>
+    <input type="email" id="t-email" autocomplete="username" hidden>
+    <label class="entrada-campo"><span>Senha atual</span>
+      <input id="t-atual" type="password" autocomplete="current-password" required>
+    </label>
+    <label class="entrada-campo"><span>Nova senha</span>
+      <span class="senha-caixa"><input id="t-nova" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="ver" aria-label="Mostrar senha">Mostrar</button></span>
+    </label>
+    <label class="entrada-campo"><span>Repita a nova senha</span>
+      <input id="t-nova2" type="password" autocomplete="new-password" minlength="8" required>
+    </label>
+    <button class="btn btn-sky" type="submit">Salvar nova senha</button>
+    <p class="entrada-msg" id="conta-msg" role="status" aria-live="polite"></p>
+  </form>
+  <button class="conta-sair" type="button" id="sair">Sair desta conta</button>
 </dialog>
 
 <script src="acesso.js"></script>

@@ -1,15 +1,13 @@
 // Rasante · recebe os avisos de venda da Kiwify e mantém a lista de clientes (Supabase Edge Function).
 // Endereço do webhook na Kiwify: https://jnkvvtdfsfugigcaqplk.supabase.co/functions/v1/kiwify-webhook
 // A Kiwify assina cada aviso: ?signature= é o HMAC-SHA1 do corpo com o token do webhook (segredos.kiwify_token).
-// Compra aprovada → cliente ativo (1 ano ou vitalício) e e-mail de boas-vindas com o link do painel.
+// Compra aprovada → cliente ativo (1 ano ou vitalício) e e-mail de boas-vindas com o link para criar a senha.
 // Reembolso ou chargeback → cliente sai da lista.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6.9.16";
+import { enviar, emailCriarSenha, criarLink, primeiroNome, dataBr, PAINEL } from "../_shared/email.ts";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-const REMETENTE = "rasante.gyn@gmail.com";
-const PAINEL = "https://matheuscatani.github.io/confere/passagens/painel.html";
 /* os links de checkout de cada plano (vendas.js) */
 const CHECKOUT = { anual: "cllMDNS", vitalicio: "M8Yt5l7" };
 const resp = (status: number, corpo: unknown) => new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
@@ -34,19 +32,20 @@ function plano(p: any): "anual" | "vitalicio" {
   return v >= 40 ? "vitalicio" : "anual";
 }
 
-async function boasVindas(email: string, nome: string, planoFinal: string) {
-  const senha = (Deno.env.get("GMAIL_SENHA") || "").replace(/\s+/g, "");
-  if (!senha) return;
-  const primeiro = (nome || "").split(" ")[0];
-  const envio = nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, auth: { user: REMETENTE, pass: senha } });
-  await envio.sendMail({
-    from: { name: "Rasante", address: REMETENTE }, to: email,
-    subject: "Seu acesso ao Rasante está liberado",
-    text: `${primeiro ? primeiro + ", s" : "S"}eu acesso ao Rasante está liberado (${planoFinal === "vitalicio" ? "vitalício" : "1 ano"}).\n\nPainel de preços: ${PAINEL}\nEntre com este e-mail (${email}); mandamos um código para confirmar.\n\nOs alertas de passagem muito abaixo do preço chegam neste e-mail a partir da próxima coleta.`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:520px;color:#10213a"><h2 style="margin:0 0 10px">${primeiro ? primeiro + ", seu" : "Seu"} acesso está liberado</h2>
-      <p style="margin:0 0 14px">Plano ${planoFinal === "vitalicio" ? "vitalício" : "de 1 ano"}. Os alertas de passagem muito abaixo do preço saindo de Goiânia chegam neste e-mail a partir da próxima coleta.</p>
-      <p style="margin:0 0 18px"><a href="${PAINEL}" style="display:inline-block;background:#ff6b3d;color:#fff;text-decoration:none;font-weight:bold;padding:14px 26px;border-radius:999px">Abrir o painel de preços</a></p>
-      <p style="color:#5b6b82;margin:0">Entre com este e-mail (${email}). Mandamos um código de 6 números para confirmar que é você.</p></div>`,
+/* compra aprovada: quem ainda não tem senha recebe o link para criar; quem já tem (renovação) recebe a confirmação */
+async function boasVindas(email: string, nome: string, planoFinal: string, valido_ate: string | null, temSenha: boolean) {
+  if (!temSenha) {
+    const link = await criarLink(db, email, "criar");
+    const [assunto, modelo] = emailCriarSenha(nome, planoFinal, valido_ate, link, true);
+    return enviar(email, assunto, modelo);
+  }
+  const n = primeiroNome(nome);
+  return enviar(email, "Pagamento confirmado: seu Rasante continua ligado", {
+    previa: "Seu plano foi renovado. Os alertas continuam chegando.",
+    saudacao: n ? `${n}, pagamento confirmado` : "Pagamento confirmado",
+    texto: "Obrigado por continuar com o Rasante. Seu acesso ao painel e os alertas de passagem barata seguem ligados, com a mesma senha de sempre.",
+    plano: { nome: planoFinal === "vitalicio" ? "Acesso vitalício" : "1 ano de alertas", detalhe: planoFinal === "vitalicio" ? "Para sempre, sem mensalidade" : `Válido até ${dataBr(valido_ate!)}` },
+    botao: { texto: "Abrir o painel", link: PAINEL },
   });
 }
 
@@ -75,7 +74,7 @@ Deno.serve(async (req) => {
     const novo = plano(p);
     const quando = new Date(String(p.approved_date || "").replace(" ", "T") + (p.approved_date && !/[zZ+]/.test(p.approved_date) ? "-03:00" : "") || Date.now());
     const data = isNaN(quando.getTime()) ? new Date() : quando;
-    const { data: atual } = await db.from("clientes").select("plano, status, valido_ate, transacao_id").eq("email", email).maybeSingle();
+    const { data: atual } = await db.from("clientes").select("plano, status, valido_ate, transacao_id, senha_hash").eq("email", email).maybeSingle();
     if (atual?.status === "ativo" && atual.transacao_id === pedido) resultado = "repetido";
     else {
       let planoFinal = novo, valido_ate: string | null = null;
@@ -88,7 +87,7 @@ Deno.serve(async (req) => {
       const { error } = await db.from("clientes").upsert({ email, nome: nome || null, plano: planoFinal, status: "ativo", comprado_em: data.toISOString(), valido_ate, transacao_id: pedido, atualizado_em: new Date().toISOString() });
       if (error) return resp(500, { erro: "não salvou" });
       resultado = `ativo (${planoFinal})`;
-      try { await boasVindas(email, nome, planoFinal); } catch (e) { console.error("boas-vindas:", (e as Error).message); }
+      try { await boasVindas(email, nome, planoFinal, valido_ate, !!atual?.senha_hash); } catch (e) { console.error("boas-vindas:", (e as Error).message); }
     }
   } else if (desfeito && (pedido || email)) {
     const novo = status === "chargedback" || evento === "chargeback" ? "estornado" : "reembolsado";
