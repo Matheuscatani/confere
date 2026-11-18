@@ -4,12 +4,12 @@
   NÃO EDITE ESTE ARQUIVO: o robô reescreve ele toda noite.
   Seus dados (afiliados, WhatsApp, e-mail, regras) ficam em robo/config.json.
 
-  Última coleta: 17/11/2026, 09:24:46
+  Última coleta: 18/11/2026, 10:43:46
   7269 anúncios lidos em 5 lojas · 450 ofertas escolhidas
 */
 
 window.CONFERE = {
-  "atualizado": "2026-11-17T12:24:46.188Z",
+  "atualizado": "2026-11-18T13:43:46.940Z",
   "cidade": "São Paulo",
   "whatsapp": "https://chat.whatsapp.com/SEU-GRUPO-AQUI",
   "email": "contato@seudominio.com.br",
