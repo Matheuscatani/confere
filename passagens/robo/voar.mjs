@@ -168,7 +168,7 @@ function escrever(destinos, voltas, resumo) {
   const dados = {
     atualizado: new Date().toISOString(), origem: cfg.origem, alertaDesconto: cfg.alertaDesconto, resumo, estadias: ESTADIAS,
     destinos: destinos.sort((a, b) => b.desconto - a.desconto).map((d) => ({
-      iata: d.iata, busca: d.busca, cidade: d.cidade, uf: d.uf, regiao: d.regiao, normal: d.normal, menorHistorico: d.menorHistorico,
+      iata: d.iata, busca: d.busca, buscaVolta: d.buscaVolta, cidade: d.cidade, uf: d.uf, regiao: d.regiao, normal: d.normal, menorHistorico: d.menorHistorico,
       melhor: d.melhor, desconto: Math.round(d.desconto * 100) / 100, ofertas: d.ofertas.length, detalhe: d.detalhe || null, voos: d.voos || {},
       dias: d.dias.map(([data, p]) => data + ":" + p).join(" ")
     })),
@@ -285,9 +285,9 @@ async function clientesAtivos() {
 }
 
 /* ---------- 6. Coleta de um grupo de destinos: calendário + duplo check na página do voo ---------- */
-const lerLista = () => cfg.destinos.map(([iata, cidade, uf, regiao, busca]) => ({ iata, cidade, uf, regiao, busca: busca || iata, chave: iata }));
+const lerLista = () => cfg.destinos.map(([iata, cidade, uf, regiao, busca, buscaVolta]) => ({ iata, cidade, uf, regiao, busca: busca || iata, buscaVolta: buscaVolta || busca || iata, chave: iata }));
 /* o caminho contrário de cada destino: chave "SSA-V" (no histórico e na última coleta) */
-const comVolta = (lista) => [...lista, ...(cfg.idaVolta === false ? [] : lista.map((d) => ({ ...d, volta: true, chave: d.iata + "-V" })))];
+const comVolta = (lista) => [...lista, ...(cfg.idaVolta === false ? [] : lista.map((d) => ({ ...d, busca: d.buscaVolta, volta: true, chave: d.iata + "-V" })))];
 
 async function coletar(lista, anterior) {
   const aba = await novaAba(), destinos = [], falharam = [];

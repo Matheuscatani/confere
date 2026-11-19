@@ -31,7 +31,7 @@
     { "nome": "10 a 15 dias", "min": 10, "max": 15 }
   ],
 
-  "_destinos": "Código do aeroporto (ou da cidade: SAO, RIO, BHZ juntam todos os aeroportos dela), cidade, estado e região. Um quinto item opcional muda o que o robô digita no Google Voos, para códigos que ele confunde (BEL virava Bélgica).",
+  "_destinos": "Código do aeroporto (ou da cidade: SAO, RIO, BHZ juntam todos os aeroportos dela), cidade, estado e região. Um quinto item opcional muda o que o robô digita no Google Voos, para códigos que ele confunde (BEL virava Bélgica). Um sexto item muda só a volta (de Belém, 'BEL' funciona e 'Belém BEL' não).",
   "destinos": [
     ["SAO", "São Paulo", "SP", "Sudeste"],
     ["RIO", "Rio de Janeiro", "RJ", "Sudeste"],
@@ -68,7 +68,7 @@
     ["MGF", "Maringá", "PR", "Sul"],
     ["JOI", "Joinville", "SC", "Sul"],
     ["MAO", "Manaus", "AM", "Norte"],
-    ["BEL", "Belém", "PA", "Norte", "Belém BEL"],
+    ["BEL", "Belém", "PA", "Norte", "Belém BEL", "BEL"],
     ["PMW", "Palmas", "TO", "Norte"],
     ["PVH", "Porto Velho", "RO", "Norte", "Porto Velho PVH"],
     ["RBR", "Rio Branco", "AC", "Norte"],

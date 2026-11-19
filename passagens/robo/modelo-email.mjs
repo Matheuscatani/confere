@@ -45,7 +45,7 @@ function cardPar(origem, { d, v, c }, linkVoo) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px"><tr>
       ${botao("Ver a ida", linkVoo(d.busca, c.ida), "#0d4f91", "#ffffff")}
       <td width="10"></td>
-      ${botao("Ver a volta", linkVoo(d.busca, c.volta, true), "#0d4f91", "#ffffff")}
+      ${botao("Ver a volta", linkVoo(d.buscaVolta || d.busca, c.volta, true), "#0d4f91", "#ffffff")}
     </tr></table>
     <div style="margin-top:14px;text-align:center;font-size:14px;color:#5b6b82">Normal ida e volta: ${real(c.normal)} · conferido na página do voo</div>
   </td></tr></table></td></tr>`;
