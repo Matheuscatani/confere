@@ -47,8 +47,24 @@ if (arg("--agendado")) {
   }
 }
 
-export const linkVoo = (dest, data) =>
-  `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights to ${dest} from ${cfg.origem.iata} on ${data} oneway`)}&curr=BRL&hl=pt-BR&gl=BR`;
+/* volta = true: o caminho contrário (do destino para Goiânia), que forma a ida e volta */
+export const linkVoo = (dest, data, volta = false) =>
+  `https://www.google.com/travel/flights?q=${encodeURIComponent(volta ? `Flights to ${cfg.origem.iata} from ${dest} on ${data} oneway` : `Flights to ${dest} from ${cfg.origem.iata} on ${data} oneway`)}&curr=BRL&hl=pt-BR&gl=BR`;
+
+/* ---------- ida e volta: a ida mais barata somada à volta mais barata, com N dias de viagem ---------- */
+const ESTADIAS = cfg.estadias || [{ nome: "Fim de semana", min: 2, max: 3 }, { nome: "4 a 6 dias", min: 4, max: 6 }, { nome: "1 semana", min: 7, max: 9 }, { nome: "10 a 15 dias", min: 10, max: 15 }];
+export function combinar(idaDias, voltaDias, min, max, limite) {
+  const volta = new Map(voltaDias), melhor = { total: Infinity };
+  for (const [ida, pi] of idaDias) {
+    if (ida < limite) continue;
+    for (let n = min; n <= max; n++) {
+      const v = iso(somaDias(new Date(ida + "T12:00"), n)), pv = volta.get(v);
+      if (pv && pi + pv < melhor.total) Object.assign(melhor, { ida, volta: v, pi, pv, total: pi + pv, dias: n });
+    }
+  }
+  return melhor.ida ? melhor : null;
+}
+const menorEstadia = Math.min(...ESTADIAS.map((e) => e.min)), maiorEstadia = Math.max(...ESTADIAS.map((e) => e.max));
 
 /* ---------- 1. Calendário de preços (roda dentro da página do Google Voos) ---------- */
 async function calendario(avancos) {
@@ -92,7 +108,7 @@ async function detalhe() {
 }
 
 async function lerDestino(aba, d) {
-  const url = linkVoo(d.busca, iso(somaDias(new Date(), 7)));
+  const url = linkVoo(d.busca, iso(somaDias(new Date(), d.volta ? 14 : 7)), d.volta);
   /* menos de ~4 meses de preços deixa o "preço normal" torto: tenta de novo e fica com a leitura mais longa.
      Mês com preços em outra moeda (o servidor do GitHub fica nos EUA e às vezes o Google manda um mês em dólar
      marcado como real): a leitura não serve, tenta de novo. */
@@ -133,7 +149,7 @@ function suspeitos(d) {
 function analisarUm(d, hist) {
   const hoje = iso(new Date()), limite = iso(somaDias(new Date(), cfg.diasMinimos)), corte = iso(somaDias(new Date(), -30));
   const precos = d.dias.map(([, p]) => p);
-  const h = (hist[d.iata] = (hist[d.iata] || []).filter((x) => x.d >= corte && x.d !== hoje));
+  const h = (hist[d.chave] = (hist[d.chave] || []).filter((x) => x.d >= corte && x.d !== hoje));
   h.push({ d: hoje, med: mediana(precos), min: Math.min(...precos) });
   /* preço normal: a mediana dos dias, nas coletas dos últimos 30 dias */
   d.normal = mediana(h.map((x) => x.med));
@@ -148,21 +164,23 @@ function analisarUm(d, hist) {
 const analisar = (destinos, hist) => { destinos.forEach((d) => analisarUm(d, hist)); return destinos; };
 
 /* ---------- 4. Monta os dados do painel (voos.js fica só no computador, para conferir) e a amostra pública ---------- */
-function escrever(destinos, resumo) {
+function escrever(destinos, voltas, resumo) {
   const dados = {
-    atualizado: new Date().toISOString(), origem: cfg.origem, alertaDesconto: cfg.alertaDesconto, resumo,
+    atualizado: new Date().toISOString(), origem: cfg.origem, alertaDesconto: cfg.alertaDesconto, resumo, estadias: ESTADIAS,
     destinos: destinos.sort((a, b) => b.desconto - a.desconto).map((d) => ({
       iata: d.iata, busca: d.busca, cidade: d.cidade, uf: d.uf, regiao: d.regiao, normal: d.normal, menorHistorico: d.menorHistorico,
-      melhor: d.melhor, desconto: Math.round(d.desconto * 100) / 100, ofertas: d.ofertas.length, detalhe: d.detalhe || null,
+      melhor: d.melhor, desconto: Math.round(d.desconto * 100) / 100, ofertas: d.ofertas.length, detalhe: d.detalhe || null, voos: d.voos || {},
       dias: d.dias.map(([data, p]) => data + ":" + p).join(" ")
-    }))
+    })),
+    /* o caminho contrário (destino → Goiânia), para o painel montar a ida e volta */
+    voltas: voltas.map((d) => ({ iata: d.iata, normal: d.normal, melhor: d.melhor, detalhe: d.detalhe || null, voos: d.voos || {}, dias: d.dias.map(([data, p]) => data + ":" + p).join(" ") }))
   };
   const cab = `/*\n  Rasante. · passagens baratas saindo de ${cfg.origem.cidade}\n  ---------------------------------------------------------------\n  NÃO EDITE ESTE ARQUIVO: o robô reescreve ele de hora em hora.\n  As regras ficam em passagens/robo/config.json.\n\n  Última coleta: ${new Date().toLocaleString("pt-BR")}\n  ${resumo.destinos} destinos · ${resumo.dias} dias com preço · ${resumo.ofertas} passagens muito abaixo do normal\n*/\n\n`;
   writeFileSync(join(SITE, "voos.js"), cab + "window.RASANTE = " + JSON.stringify(dados, null, 1) + ";\n");
   /* a página de vendas mostra só as 5 maiores ofertas (sem o calendário) e os nomes dos destinos */
   const top = new Set(dados.destinos.filter((d) => d.melhor && d.desconto >= 0.2).slice(0, 5).map((d) => d.iata));
   const amostra = { atualizado: dados.atualizado, origem: dados.origem, alertaDesconto: dados.alertaDesconto,
-    destinos: dados.destinos.map(({ dias, ...d }) => (top.has(d.iata) ? d : { iata: d.iata, cidade: d.cidade })) };
+    destinos: dados.destinos.map(({ dias, voos, ...d }) => (top.has(d.iata) ? d : { iata: d.iata, cidade: d.cidade })) };
   return { dados, amostra };
 }
 
@@ -187,7 +205,16 @@ async function guardarMemoria({ dados: painel, amostra }) {
 
 /* ---------- 5. Alerta por e-mail: só o que ainda não foi avisado (ou que caiu mais 5%) ---------- */
 /* sai logo depois da coleta em que a passagem apareceu; a mesma passagem nunca é avisada duas vezes */
-async function alertar(destinos) {
+/* ida e volta: a combinação mais barata de cada destino (2 a 15 dias de viagem), com a ida e a volta conferidas na página do voo */
+function idaVoltaBarata(d, v) {
+  if (!v || !v.normal || !d.normal) return null;
+  const c = combinar(d.dias, v.dias, menorEstadia, maiorEstadia, iso(somaDias(new Date(), cfg.diasMinimos)));
+  if (!c) return null;
+  const normal = d.normal + v.normal;
+  return { ...c, normal, desconto: 1 - c.total / normal, conferido: !!(d.conferidos?.has(c.ida) && v.conferidos?.has(c.volta)) };
+}
+
+async function alertar(destinos, voltas = []) {
   const avisados = lerJson(AVISADOS, {}), hoje = iso(new Date()), novos = [];
   for (const k of Object.keys(avisados)) if (k.split("|")[1] < hoje) delete avisados[k];
   for (const d of destinos) {
@@ -200,12 +227,24 @@ async function alertar(destinos) {
     novos.push({ d, melhor, outras: nova.length - 1 });
     nova.forEach((o) => (avisados[d.iata + "|" + o.data] = o.preco));
   }
-  if (!novos.length) { log("E-mail: nenhuma passagem nova muito abaixo do normal."); return; }
+  /* ida e volta muito abaixo do normal (soma das duas passagens) */
+  const pares = [], porIata = Object.fromEntries(voltas.map((v) => [v.iata, v]));
+  for (const d of destinos) {
+    const v = porIata[d.iata], c = idaVoltaBarata(d, v);
+    if (!c || c.desconto < cfg.alertaDesconto || c.normal - c.total < cfg.economiaMinima) continue;
+    const k = `${d.iata}|${c.ida}|${c.volta}`;
+    if (avisados[k] && c.total > avisados[k] * 0.95) continue;
+    if (!c.conferido) { log(`E-mail: ida e volta para ${d.cidade} ficou fora (ida ou volta não conferida na página do voo)`); continue; }
+    pares.push({ d, v, c }); avisados[k] = c.total;
+  }
+  if (!novos.length && !pares.length) { log("E-mail: nenhuma passagem nova muito abaixo do normal."); return; }
   novos.sort((a, b) => b.melhor.desconto - a.melhor.desconto);
-  const p = novos[0];
-  const assunto = `✈ ${cfg.origem.cidade} → ${p.d.cidade} por ${real(p.melhor.preco)} (${Math.round(p.melhor.desconto * 100)}% abaixo do normal)` + (novos.length > 1 ? ` + ${novos.length - 1} destino(s)` : "");
+  pares.sort((a, b) => b.c.desconto - a.c.desconto);
+  const total = novos.length + pares.length, p = novos[0], q = pares[0];
+  const assunto = (p ? `✈ ${cfg.origem.cidade} → ${p.d.cidade} por ${real(p.melhor.preco)} (${Math.round(p.melhor.desconto * 100)}% abaixo do normal)`
+    : `✈ ${cfg.origem.cidade} ⇄ ${q.d.cidade} ida e volta por ${real(q.c.total)} (${Math.round(q.c.desconto * 100)}% abaixo do normal)`) + (total > 1 ? ` + ${total - 1} oferta(s)` : "");
   const quando = new Date().toLocaleString("pt-BR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).replace(",", " às");
-  const html = alertaHtml({ origem: cfg.origem.cidade, novos, linkVoo, desconto: cfg.alertaDesconto, quando });
+  const html = alertaHtml({ origem: cfg.origem.cidade, novos, pares, linkVoo, desconto: cfg.alertaDesconto, quando });
   /* clientes que pagaram (lista no Supabase, alimentada pela Kiwify) */
   const clientes = (await clientesAtivos()).filter((e) => e !== cfg.email.para);
   let enviados = 0, saiu = false;
@@ -231,7 +270,7 @@ async function alertar(destinos) {
   if (saiu) {
     avisados._envio = new Date().toISOString();
     writeFileSync(AVISADOS, JSON.stringify(avisados, null, 1));
-    log(`E-mail: enviado com ${novos.length} destino(s) para ${cfg.email.para} e ${enviados} cliente(s).`);
+    log(`E-mail: enviado com ${novos.length} só ida e ${pares.length} ida e volta para ${cfg.email.para} e ${enviados} cliente(s).`);
   }
 }
 
@@ -246,24 +285,27 @@ async function clientesAtivos() {
 }
 
 /* ---------- 6. Coleta de um grupo de destinos: calendário + duplo check na página do voo ---------- */
-const lerLista = () => cfg.destinos.map(([iata, cidade, uf, regiao, busca]) => ({ iata, cidade, uf, regiao, busca: busca || iata }));
+const lerLista = () => cfg.destinos.map(([iata, cidade, uf, regiao, busca]) => ({ iata, cidade, uf, regiao, busca: busca || iata, chave: iata }));
+/* o caminho contrário de cada destino: chave "SSA-V" (no histórico e na última coleta) */
+const comVolta = (lista) => [...lista, ...(cfg.idaVolta === false ? [] : lista.map((d) => ({ ...d, volta: true, chave: d.iata + "-V" })))];
 
 async function coletar(lista, anterior) {
   const aba = await novaAba(), destinos = [], falharam = [];
-  let lidos = 0;
+  let lidos = 0, lidosVolta = 0;
   for (const d of lista) {
     if ((SO && !SO.includes(d.iata)) || falharam.length >= 5) {
-      if (anterior[d.iata]) destinos.push({ ...d, dias: anterior[d.iata].dias });
-      if (!SO) falharam.push(d.iata);
+      if (anterior[d.chave]) destinos.push({ ...d, dias: anterior[d.chave].dias });
+      if (!SO) falharam.push(d.chave);
       continue;
     }
+    const nome = d.volta ? `Volta ${d.cidade} → ${cfg.origem.cidade} (${d.iata})` : `${d.cidade} (${d.iata})`;
     try {
-      d.dias = await lerDestino(aba, d); destinos.push(d); lidos++;
-      log(`${d.cidade} (${d.iata}): ${d.dias.length} dias, de ${real(Math.min(...d.dias.map((x) => x[1])))}`);
+      d.dias = await lerDestino(aba, d); destinos.push(d); if (d.volta) lidosVolta++; else lidos++;
+      log(`${nome}: ${d.dias.length} dias, de ${real(Math.min(...d.dias.map((x) => x[1])))}`);
     } catch (e) {
-      falharam.push(d.iata); log(`${d.cidade} (${d.iata}): FALHOU (${e.message.slice(0, 100)})`);
+      falharam.push(d.chave); log(`${nome}: FALHOU (${e.message.slice(0, 100)})`);
       /* destino que falhou hoje usa os preços da última coleta */
-      if (anterior[d.iata]) destinos.push({ ...d, dias: anterior[d.iata].dias });
+      if (anterior[d.chave]) destinos.push({ ...d, dias: anterior[d.chave].dias });
     }
     await espera(1500 + Math.random() * 2000);
   }
@@ -274,7 +316,12 @@ async function coletar(lista, anterior) {
      Até 20% acima do calendário conta como "confere" (o calendário estava certo, só um pouco velho);
      mais que isso, o calendário estava errado e os outros dias suspeitos parecidos também saem. */
   const conferir = async (d, data) => {
-    try { await aba.ir(linkVoo(d.busca, data)); await espera(2500); return { data, ...(await aba.js(naPagina(detalhe))) }; }
+    try {
+      await aba.ir(linkVoo(d.busca, data, d.volta)); await espera(2500);
+      const det = { data, ...(await aba.js(naPagina(detalhe))) };
+      if (det.voo) (d.voos ||= {})[data] = det.voo;
+      return det;
+    }
     catch (e) { log(`Conferência ${d.iata} ${data}: falhou (${e.message.slice(0, 80)})`); return null; }
   };
   const aplicar = (d, det, preco) => {
@@ -317,26 +364,47 @@ async function coletar(lista, anterior) {
       if (d.melhor && d.melhor.data === det.data) break;
     }
   }
+
+  /* ida e volta: a combinação mais barata de cada destino, quando está perto de virar alerta,
+     tem a ida e a volta conferidas na página do voo (o preço da página entra no lugar) */
+  let pares = 0;
+  for (const d of destinos.filter((x) => !x.volta)) {
+    const v = destinos.find((x) => x.volta && x.iata === d.iata);
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      const c = idaVoltaBarata(d, v);
+      if (!c || c.conferido || c.desconto < cfg.alertaDesconto - 0.05) break;
+      for (const [x, data, preco] of [[d, c.ida, c.pi], [v, c.volta, c.pv]]) {
+        if (x.conferidos?.has(data)) continue;
+        const det = await conferir(x, data), r = aplicar(x, det, preco);
+        if (r === "sem") { if (det) x.dias = x.dias.filter(([y]) => y !== data); }
+        else (x.conferidos ||= new Set()).add(data);
+      }
+      analisarUm(d, hist); analisarUm(v, hist);
+      if (idaVoltaBarata(d, v)?.conferido) { pares++; break; }
+    }
+  }
   await aba.fechar();
   const conferidos = destinos.filter((d) => d.melhor && d.conferidos && d.conferidos.has(d.melhor.data)).length;
-  log(`Duplo check: ${conferidos} de ${destinos.filter((d) => d.melhor).length} menores preços conferidos na página do voo (${corrigidos} corrigido(s)).`);
-  return { destinos, falharam, lidos };
+  log(`Duplo check: ${conferidos} de ${destinos.filter((d) => d.melhor).length} menores preços conferidos na página do voo (${corrigidos} corrigido(s)); ${pares} ida e volta barata(s) conferida(s).`);
+  return { destinos, falharam, lidos, lidosVolta };
 }
 
 /* ---------- 7. Fecha a coleta: preço normal, painel, memória e e-mail ---------- */
-async function finalizar(destinos, falharam, lidos, inicio) {
+async function finalizar(todos, falharam, lidos, inicio) {
   if (lidos < (TESTE ? 1 : 15)) throw new Error(`Só ${lidos} destinos lidos agora; o painel anterior foi mantido.`);
   const hist = lerJson(HIST, {});
-  analisar(destinos, hist);
-  const resumo = { destinos: destinos.length, dias: destinos.reduce((s, d) => s + d.dias.length, 0), ofertas: destinos.reduce((s, d) => s + d.ofertas.length, 0), falharam };
-  const painel = escrever(destinos, resumo);
+  analisar(todos, hist);
+  const destinos = todos.filter((d) => !d.volta), voltas = todos.filter((d) => d.volta);
+  const resumo = { destinos: destinos.length, voltas: voltas.length, dias: destinos.reduce((s, d) => s + d.dias.length, 0), ofertas: destinos.reduce((s, d) => s + d.ofertas.length, 0), falharam };
+  const painel = escrever(destinos, voltas, resumo);
   if (!TESTE) {
     writeFileSync(HIST, JSON.stringify(hist));
-    writeFileSync(ULTIMA, JSON.stringify({ quando: new Date().toISOString(), destinos: destinos.map(({ iata, dias }) => ({ iata, dias })) }));
+    /* na última coleta a volta fica com a chave "SSA-V" */
+    writeFileSync(ULTIMA, JSON.stringify({ quando: new Date().toISOString(), destinos: todos.map(({ chave, dias }) => ({ iata: chave, dias })) }));
   }
   log(`Pronto: ${resumo.destinos} destinos, ${resumo.dias} dias com preço, ${resumo.ofertas} passagens muito abaixo do normal, em ${Math.round((Date.now() - inicio) / 60000)} min.` + (falharam.length ? ` Falharam: ${falharam.join(", ")}` : ""));
   if (!LOCAL) {
-    await alertar(destinos);
+    await alertar(destinos, voltas);
     try { await guardarMemoria(painel); }
     catch (e) { log("ERRO: não guardei os preços no Supabase:", e.message); process.exitCode = 1; }
   }
@@ -368,12 +436,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     /* sem Chrome: só junta. Destino de parte que não chegou fica com os preços da última coleta (sem o selo de conferido). */
     try {
       const partes = readdirSync(JUNTAR, { recursive: true }).filter((f) => /parte-\d+\.json$/.test(String(f))).map((f) => lerJson(join(JUNTAR, String(f)), null)).filter(Boolean);
-      const vindos = Object.fromEntries(partes.flatMap((p) => p.destinos).map((d) => [d.iata, d]));
+      const vindos = Object.fromEntries(partes.flatMap((p) => p.destinos).map((d) => [d.chave || d.iata, d]));
       const destinos = [], falharam = partes.flatMap((p) => p.falharam);
-      for (const d of lerLista()) {
-        const v = vindos[d.iata];
-        if (v) destinos.push({ ...v, conferidos: new Set(v.conferidos || []) });
-        else if (anterior[d.iata]) { destinos.push({ ...d, dias: anterior[d.iata].dias }); if (!falharam.includes(d.iata)) falharam.push(d.iata); }
+      for (const d of comVolta(lerLista())) {
+        const v = vindos[d.chave];
+        if (v) destinos.push({ ...d, ...v, conferidos: new Set(v.conferidos || []) });
+        else if (anterior[d.chave]) { destinos.push({ ...d, dias: anterior[d.chave].dias }); if (!falharam.includes(d.chave)) falharam.push(d.chave); }
       }
       log(`Partes recebidas: ${partes.map((p) => p.parte).join(", ") || "nenhuma"}.`);
       await finalizar(destinos, falharam, partes.reduce((s, p) => s + p.lidos, 0), inicio);
@@ -384,13 +452,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       let lista = lerLista();
       if (TESTE) lista = lista.slice(0, 3);
       if (PARTE) { const [n, total] = PARTE; lista = lista.filter((_, i) => i % total === n - 1); }
-      const { destinos, falharam, lidos } = await coletar(lista, anterior);
+      /* cada parte lê a ida e a volta dos mesmos destinos, para conferir a ida e volta junto */
+      lista = comVolta(lista);
+      const { destinos, falharam, lidos, lidosVolta } = await coletar(lista, anterior);
       if (PARTE) {
         if (!lidos) throw new Error("nenhum destino lido nesta parte");
         const arq = join(AQUI, `parte-${PARTE[0]}.json`);
         writeFileSync(arq, JSON.stringify({ parte: PARTE[0], lidos, falharam,
-          destinos: destinos.map(({ iata, cidade, uf, regiao, busca, dias, conferidos, detalhe }) => ({ iata, cidade, uf, regiao, busca, dias, conferidos: [...(conferidos || [])], detalhe: detalhe || null })) }));
-        log(`Parte ${PARTE.join("/")}: ${lidos} de ${lista.length} destinos lidos, em ${Math.round((Date.now() - inicio) / 60000)} min.`);
+          destinos: destinos.map(({ iata, chave, volta, cidade, uf, regiao, busca, dias, conferidos, detalhe, voos }) => ({ iata, chave, volta: !!volta, cidade, uf, regiao, busca, dias, conferidos: [...(conferidos || [])], detalhe: detalhe || null, voos: voos || {} })) }));
+        log(`Parte ${PARTE.join("/")}: ${lidos} destinos e ${lidosVolta} voltas lidos, em ${Math.round((Date.now() - inicio) / 60000)} min.`);
       } else await finalizar(destinos, falharam, lidos, inicio);
     } catch (e) {
       log("ERRO:", e.message); process.exitCode = 1;

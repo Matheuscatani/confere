@@ -22,6 +22,15 @@
   "conferenciasPorDestino": 3,
   "publicar": true,
 
+  "_idaVolta": "A equipe lê também o caminho contrário (de cada destino para Goiânia). O painel soma a ida com a volta para os dias de viagem escolhidos, e o e-mail avisa quando a ida e volta fica muito abaixo do normal (as duas passagens conferidas na página do voo). idaVolta: false desliga a leitura da volta.",
+  "idaVolta": true,
+  "estadias": [
+    { "nome": "Fim de semana", "min": 2, "max": 3 },
+    { "nome": "4 a 6 dias", "min": 4, "max": 6 },
+    { "nome": "1 semana", "min": 7, "max": 9 },
+    { "nome": "10 a 15 dias", "min": 10, "max": 15 }
+  ],
+
   "_destinos": "Código do aeroporto (ou da cidade: SAO, RIO, BHZ juntam todos os aeroportos dela), cidade, estado e região. Um quinto item opcional muda o que o robô digita no Google Voos, para códigos que ele confunde (BEL virava Bélgica).",
   "destinos": [
     ["SAO", "São Paulo", "SP", "Sudeste"],

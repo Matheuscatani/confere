@@ -4,13 +4,15 @@ Passagens baratas saindo de Goiânia para todo o Brasil. Mostra o menor preço d
 
 ## Como funciona
 
-De hora em hora (aos 7 minutos de cada hora), o robô roda na nuvem do GitHub (GitHub Actions, gratuito), sem usar o seu Mac. Cada coleta leva uns 25 minutos:
+A cada 30 minutos (aos 7 e aos 37), o robô roda na nuvem do GitHub (GitHub Actions, gratuito), em 8 partes ao mesmo tempo, sem usar o seu Mac:
 
-1. abre o Google Voos para cada destino e lê o calendário com o menor preço de cada dia (junta LATAM, GOL, Azul e as outras que voam a rota);
-2. calcula o preço normal de cada rota: a mediana dos preços nas coletas dos últimos 30 dias;
-3. marca como oferta o dia que estiver 35% (ou mais) abaixo do normal e pelo menos R$ 150 mais barato;
-4. abre o dia mais barato dos melhores destinos para anotar companhia, horário e paradas;
-5. reescreve o `voos.js`, publica o site e manda e-mail com as ofertas novas.
+1. abre o Google Voos para cada destino e lê o calendário com o menor preço de cada dia, na ida (Goiânia → destino) e na volta (destino → Goiânia), juntando LATAM, GOL, Azul e as outras que voam a rota;
+2. confere o menor preço de cada rota na página do voo daquele dia (duplo check), e também a ida e a volta da combinação de ida e volta mais barata quando ela está perto de virar alerta;
+3. calcula o preço normal de cada rota: a mediana dos preços nas coletas dos últimos 30 dias;
+4. marca como oferta o dia que estiver 35% (ou mais) abaixo do normal e pelo menos R$ 150 mais barato; na ida e volta, vale a soma das duas passagens contra a soma dos dois preços normais;
+5. grava o painel no Supabase e manda o e-mail com as ofertas novas (só ida e ida e volta) logo em seguida.
+
+No painel, o cliente escolhe **Só ida** ou **Ida e volta** e, na ida e volta, quantos dias quer ficar (fim de semana, 4 a 6 dias, 1 semana, 10 a 15 dias: `estadias` no `config.json`). Tocando no dia da ida, aparecem as voltas possíveis com o total.
 
 A memória do robô (preço normal de cada rota e avisos já mandados) fica em `robo/historico.json`, `robo/ultima.json` e `robo/avisados.json`, salvos no repositório a cada coleta.
 
@@ -50,7 +52,7 @@ O que o robô fez fica anotado em `robo/robo.log`.
 - `index.html` e `painel.html` desta pasta só levam ao endereço novo (os links antigos continuam funcionando). `fotos/` e `email/` ficam aqui para os e-mails já enviados.
 - `robo/voar.mjs`: o robô. Guarda os preços do painel e a amostra da página de vendas no Supabase. `robo/email.mjs` envia os alertas e `robo/modelo-email.mjs` monta o visual deles.
 - `servidor/`: os serviços do Supabase (acesso, amostra, robo, kiwify-webhook, clientes-ativos).
-- `../.github/workflows/passagens.yml`: o agendamento de hora em hora na nuvem do GitHub.
+- `../.github/workflows/passagens.yml`: o agendamento a cada 30 minutos na nuvem do GitHub.
 
 ## Vendas (Kiwify) e lista de clientes (Supabase)
 
